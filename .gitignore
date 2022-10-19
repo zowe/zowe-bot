@@ -1,0 +1,9 @@
+node_modules/
+*.log
+.DS_Store
+*.swp
+release/
+dist/
+.vscode/
+.build/
+**/.tsbuildinfo
