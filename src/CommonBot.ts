@@ -105,8 +105,8 @@ export class CommonBot {
                     logger.error(`The listener file "${__dirname}/plugins/${chatToolType}/${pluginFileName}.js" does not exist!`);
                     throw new Error(`The required listener file "${__dirname}/plugins/${chatToolType}/${pluginFileName}.js" does not exist!`);
                 } else {
-                    const ChatToolListener: typeof Listener = require(`./plugins/${chatToolType}/${pluginFileName}`);
-                    listener = new ChatToolListener(this);
+                    const ChatToolListener = require(`./plugins/${chatToolType}/${pluginFileName}`);
+                    listener = new ChatToolListener[pluginFileName](this);
                 }
             }
             this.listeners.push(listener);
@@ -152,8 +152,8 @@ export class CommonBot {
                     logger.error(`The router file "${__dirname}/plugins/${chatToolType}/${pluginFileName}.js" does not exist!`);
                     throw new Error(`The required router file "${__dirname}/plugins/${chatToolType}/${pluginFileName}.js" does not exist!`);
                 } else {
-                    const ChatToolRouter: typeof Router = require(`./plugins/${chatToolType}/${pluginFileName}`);
-                    this.router = new ChatToolRouter(this);
+                    const ChatToolRouter = require(`./plugins/${chatToolType}/${pluginFileName}`);
+                    this.router = new ChatToolRouter[pluginFileName](this);
                 }
             }
 

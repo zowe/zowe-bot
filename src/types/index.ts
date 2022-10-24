@@ -110,8 +110,8 @@ export interface IBotOption {
 export interface ILogOption {
     filePath: string,
     level: ILogLevel,
-    maximumSize: string,
-    maximumFiles: string
+    maximumSize: number,
+    maximumFile: number
 }
 
 export interface IAppOption extends IHttpEndpoint {

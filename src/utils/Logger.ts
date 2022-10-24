@@ -29,7 +29,7 @@ export class Logger {
             filePath: `${__dirname}/../log/common-bot.log`,
             level: ILogLevel.INFO,
             maximumSize: null,
-            maximumFiles: null,
+            maximumFile: null,
         };
 
         // Process environment variables
@@ -51,10 +51,10 @@ export class Logger {
                 }
             }
             if (process.env.COMMONBOT_LOG_MAX_SIZE !== undefined && process.env.COMMONBOT_LOG_MAX_SIZE.trim() !== '') {
-                this.option.maximumSize = process.env.COMMONBOT_LOG_MAX_SIZE;
+                this.option.maximumSize = parseInt(process.env.COMMONBOT_LOG_MAX_SIZE);
             }
-            if (process.env.COMMONBOT_LOG_MAX_FILES !== undefined && process.env.COMMONBOT_LOG_MAX_FILES.trim() !== '') {
-                this.option.maximumFiles = process.env.COMMONBOT_LOG_MAX_FILES;
+            if (process.env.COMMONBOT_LOG_MAX_FILE !== undefined && process.env.COMMONBOT_LOG_MAX_FILE.trim() !== '') {
+                this.option.maximumFile = parseInt(process.env.COMMONBOT_LOG_MAX_FILE);
             }
         } catch (error) {
             console.error(`Failed to process the environment variables for Common Bot Framework!`);
@@ -77,17 +77,25 @@ export class Logger {
             //   format: winston.format.combine(winston.format.timestamp(), winston.format.colorize(), winston.format.simple()),
             transports: [new winston.transports.File({
                 filename: this.option.filePath,
-                maxsize: <number><unknown>(this.option.maximumSize),
-                maxFiles: <number><unknown>(this.option.maximumFiles),
+                maxsize: this.option.maximumSize,
+                maxFiles: this.option.maximumFile,
                 format: combine(timestamp(), format),
                 options: { flags: 'w' } }),
             ],
         });
 
         // Remove console log output in production and test env.
-        if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test' ) {
+        if (process.env.NODE_ENV === 'production') {
             this.logger.add( new winston.transports.Console({ format: combine(timestamp(), format) }));
         }
+
+        process.on("beforeExit", (code) => {
+            this.logger.clear();
+        });
+
+        process.on("exit", (code) => {
+            this.logger.end();
+        });
 
         Logger.instance = this;
     }
