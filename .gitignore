@@ -5,5 +5,3 @@ node_modules/
 release/
 dist/
 .vscode/
-.build/
-**/.tsbuildinfo

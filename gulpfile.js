@@ -30,27 +30,25 @@
 //                                        = fvt        : Build and package function test package
 //                                        = ...(dev)   : Build source code for development
 //   RELEASE_TYPE                 - Indicate what kind of release will the package file be named: beta | ga | ...(dev)
-//                                        = beta       : Beta is added to package file name: common-bot-v${releaseVersion}.tar.gz
-//                                                       NODE_ENV = production -> common-bot-v${releaseVersion}.tar.gz
-//                                                       NODE_ENV = ut         -> common-bot-v${releaseVersion}.tar.gz
-//                                                       NODE_ENV = fvt        -> common-bot-v${releaseVersion}.tar.gz
-//                                                       NODE_ENV = ...        -> common-bot-v${releaseVersion}.tar.gz
-//                                        = ga         : Package file name: common-bot-v${releaseVersion}.tar.gz
-//                                                       NODE_ENV = production -> common-bot-v${releaseVersion}.tar.gz
-//                                                       NODE_ENV = ut         -> common-bot-v${releaseVersion}.tar.gz
-//                                                       NODE_ENV = fvt        -> common-bot-v${releaseVersion}.tar.gz
-//                                                       NODE_ENV = ...        -> common-bot-v${releaseVersion}.tar.gz
-//                                        = ...(dev)   : Package file name: common-bot-v${releaseVersion}.tar.gz
-//                                                       NODE_ENV = production -> common-bot-v${releaseVersion}.tar.gz
-//                                                       NODE_ENV = ut         -> common-bot-v${releaseVersion}.tar.gz
-//                                                       NODE_ENV = fvt        -> common-bot-v${releaseVersion}.tar.gz
-//                                                       NODE_ENV = ...        -> common-bot-v${releaseVersion}.tar.gz
+//                                        = beta       : Beta is added to package file name: zowe-bot-v${releaseVersion}.tar.gz
+//                                                       NODE_ENV = production -> zowe-bot-v${releaseVersion}.tar.gz
+//                                                       NODE_ENV = ut         -> zowe-bot-v${releaseVersion}.tar.gz
+//                                                       NODE_ENV = fvt        -> zowe-bot-v${releaseVersion}.tar.gz
+//                                                       NODE_ENV = ...        -> zowe-bot-v${releaseVersion}.tar.gz
+//                                        = ga         : Package file name: zowe-bot-v${releaseVersion}.tar.gz
+//                                                       NODE_ENV = production -> zowe-bot-v${releaseVersion}.tar.gz
+//                                                       NODE_ENV = ut         -> zowe-bot-v${releaseVersion}.tar.gz
+//                                                       NODE_ENV = fvt        -> zowe-bot-v${releaseVersion}.tar.gz
+//                                                       NODE_ENV = ...        -> zowe-bot-v${releaseVersion}.tar.gz
+//                                        = ...(dev)   : Package file name: zowe-bot-v${releaseVersion}.tar.gz
+//                                                       NODE_ENV = production -> zowe-bot-v${releaseVersion}.tar.gz
+//                                                       NODE_ENV = ut         -> zowe-bot-v${releaseVersion}.tar.gz
+//                                                       NODE_ENV = fvt        -> zowe-bot-v${releaseVersion}.tar.gz
+//                                                       NODE_ENV = ...        -> zowe-bot-v${releaseVersion}.tar.gz
 //                                   Used in gulp build, gulp packaging task
 //   RELEASE_VERSION               - Indicate which version will be add build file name
 //                                   Used in gulp packaging task
 //
-// Author:
-//   bjwsfang@cn.ibm.com
 
 const gulp = require('gulp');
 const gulpClean = require('gulp-clean');
@@ -122,10 +120,11 @@ if (nodeEnv === 'production') { // Product
 
 // Print the configuration
 console.log('');
+console.log('Building @zowe/bot with settings below:');
 console.log('###################################################');
-console.log(`                    NODE_ENV = ${nodeEnv}`);
-console.log(`                RELEASE_TYPE = ${releaseType}`);
-console.log(`             RELEASE_VERSION = ${releaseVersion}`);
+console.log(`           NODE_ENV = ${nodeEnv}`);
+console.log(`       RELEASE_TYPE = ${releaseType}`);
+console.log(`    RELEASE_VERSION = ${releaseVersion}`);
 console.log('###################################################');
 console.log('');
 console.log(`Build folder: ${JSON.stringify(folder, null, 2)}`);
@@ -142,7 +141,7 @@ if (nodeEnv === undefined || nodeEnv.length === 0
 
 // Clean dist folder
 function cleanTask() {
-    return gulp.src('dist', {read: false, allowEmpty: true}).pipe(gulpClean());
+    return gulp.src('dist', { read: false, allowEmpty: true }).pipe(gulpClean());
 }
 
 // Check code style
@@ -173,7 +172,7 @@ function isTypeScript(file) {
 
 // Build source code task
 function buildSourceTask() {
-    return gulp.src(folder.src.source, {dot: true})
+    return gulp.src(folder.src.source, { dot: true })
             .pipe(gulpIf(isTypeScript, tsProject()))
             .pipe(gulp.dest(folder.src.destination));
 }
@@ -190,7 +189,7 @@ async function createPackageJsonTask() {
     const pkgJson = require('./package.json');
 
     // Copy
-    const result = {...pkgJson};
+    const result = { ...pkgJson };
 
     // Change product version
     result.version = releaseVersion;
@@ -201,17 +200,31 @@ async function createPackageJsonTask() {
     delete result.scripts.deploy;
     if (nodeEnv === 'production') { // Product
         delete result.devDependencies;
+        delete result.scripts.build;
+        delete result.scripts.packaging;
+        delete result.scripts.lint;
+        delete result.scripts.checkDeps;
+        delete result.scripts.updateDeps;
+        delete result.scripts.test;
+
+        result.main = 'index.js';
+        result.types = './index.d.ts';
+
+        // TODO: must be updated later
         delete result.scripts.testUnit;
         delete result.scripts.testFunction;
     } else if (nodeEnv === 'fvt') { // FVT
+        // TODO: must be updated later
         result.scripts.test = result.scripts.testFunction;
         delete result.scripts.testUnit;
         delete result.scripts.testFunction;
     } else if (nodeEnv === 'ut') { // UT
+        // TODO: must be updated later
         result.scripts.test = result.scripts.testUnit;
         delete result.scripts.testUnit;
         delete result.scripts.testFunction;
     } else { // Development
+        // TODO: must be updated later
         delete result.scripts.build;
         delete result.scripts.packaging;
     }
@@ -264,33 +277,33 @@ async function packagingTask() {
         default:
             buildTypeSegment = '';
     }
-    packagedFileName = `common-bot-v${releaseVersion.replace(/\./g, '')}${releaseTypeSegment}${buildTypeSegment}-${buildTime}.tar.gz`;
-    releasedFileName = `common-bot-v${releaseVersion.replace(/\./g, '')}.tar.gz`;
+    packagedFileName = `zowe-bot-v${releaseVersion.replace(/\./g, '')}${releaseTypeSegment}${buildTypeSegment}-${buildTime}.tar.gz`;
+    releasedFileName = `zowe-bot-v${releaseVersion.replace(/\./g, '')}.tar.gz`;
 
     if (nodeEnv === 'production') { // Product: folder.src.destination = 'dist/'
-        return childProcess.execSync(`cd ./${folder.src.destination} && mkdir -p ../release && rm -rf ../release/common-bot*.tar.gz `
+        return childProcess.execSync(`cd ./${folder.src.destination} && mkdir -p ../release && rm -rf ../release/zowe-bot*.tar.gz `
                 + `&& rm -rf ./node_modules && npm install && rm -rf ./package-lock.json `
                 + `&& mkdir package && mv [a-oq-zA-OQ-Z0-9]* ./package/. && mv package.json ./package/.  && mv plugins ./package/. `
                 + `&& tar zcf ../release/${packagedFileName} * `,
-        {stdio: 'inherit'});
+        { stdio: 'inherit' });
     } else if (nodeEnv === 'fvt') { // FVT: folder.src.destination = 'dist/src/'  folder.test.destination = 'dist/test/fvt/'
-        return childProcess.execSync(`cd ./${folder.src.destination}.. && mkdir -p ../release && rm -rf ../release/common-bot*.tar.gz `
+        return childProcess.execSync(`cd ./${folder.src.destination}.. && mkdir -p ../release && rm -rf ../release/zowe-bot*.tar.gz `
                 + `&& rm -rf ./node_modules && npm install && rm -rf ./package-lock.json `
                 + `&& mkdir package && mv [a-oq-zA-OQ-Z0-9]* ./package/. && mv package.json ./package/.  && mv plugins ./package/. `
                 + `&& tar zcf ../release/${packagedFileName} * `,
-        {stdio: 'inherit'});
+        { stdio: 'inherit' });
     } else if (nodeEnv === 'ut') { // UT: folder.src.destination = 'dist/src/'  folder.test.destination = 'dist/test/fvt/'
-        return childProcess.execSync(`cd ./${folder.src.destination}.. && mkdir -p ../release && rm -rf ../release/common-bot*.tar.gz `
+        return childProcess.execSync(`cd ./${folder.src.destination}.. && mkdir -p ../release && rm -rf ../release/zowe-bot*.tar.gz `
                 + `&& rm -rf ./node_modules && npm install && rm -rf ./package-lock.json `
                 + `&& mkdir package && mv [a-oq-zA-OQ-Z0-9]* ./package/. && mv package.json ./package/.  && mv plugins ./package/. `
                 + `&& tar zcf ../release/${packagedFileName} * `,
-        {stdio: 'inherit'});
+        { stdio: 'inherit' });
     } else { // Development: folder.src.destination = 'dist/'
-        return childProcess.execSync(`cd ./${folder.src.destination} && mkdir -p ../release && rm -rf ../release/common-bot*.tar.gz `
+        return childProcess.execSync(`cd ./${folder.src.destination} && mkdir -p ../release && rm -rf ../release/zowe-bot*.tar.gz `
                 + `&& rm -rf ./package-lock.json `
                 + `&& mkdir package && mv [a-oq-zA-OQ-Z0-9]* ./package/. && mv package.json ./package/.  && mv plugins ./package/. `
                 + `&& tar zcf ../release/${packagedFileName} * `,
-        {stdio: 'inherit'});
+        { stdio: 'inherit' });
     }
 }
 
@@ -298,31 +311,31 @@ async function packagingTask() {
 async function installDependencyTask() {
     if (nodeEnv === 'production') { // Product: folder.src.destination = 'dist/'
         return childProcess.execSync(`cd ./${folder.src.destination} && rm -rf ./node_modules && npm install && rm -rf ./package-lock.json`,
-                {stdio: 'inherit'});
+                { stdio: 'inherit' });
     } else if (nodeEnv === 'fvt') { // FVT: folder.src.destination = 'dist/src/'  folder.test.destination = 'dist/test/fvt/'
         return childProcess.execSync(`cd ./${folder.src.destination}.. && rm -rf ./node_modules && npm install && rm -rf ./package-lock.json`,
-                {stdio: 'inherit'});
+                { stdio: 'inherit' });
     } else if (nodeEnv === 'ut') { // UT: folder.src.destination = 'dist/src/'  folder.test.destination = 'dist/test/fvt/'
         return childProcess.execSync(`cd ./${folder.src.destination}.. && rm -rf ./node_modules && npm install && rm -rf ./package-lock.json`,
-                {stdio: 'inherit'});
+                { stdio: 'inherit' });
     } else { // Development: folder.src.destination = 'dist/'
         return childProcess.execSync(`cd ./${folder.src.destination} && rm -rf ./node_modules && npm install && rm -rf ./package-lock.json`,
-                {stdio: 'inherit'});
+                { stdio: 'inherit' });
     }
 }
 
 // Purge unused file task
 async function purgeUnusedFileTask() {
     if (nodeEnv === 'production') { // Product: folder.src.destination = 'dist/'
-        return childProcess.execSync(`cd ./${folder.src.destination} && rm -rf ./logs/* && find . -name ".DS_*"|xargs rm -rf`, {stdio: 'inherit'});
+        return childProcess.execSync(`cd ./${folder.src.destination} && rm -rf ./logs/* && find . -name ".DS_*"|xargs rm -rf`, { stdio: 'inherit' });
     } else if (nodeEnv === 'fvt') { // FVT: folder.src.destination = 'dist/src/'  folder.test.destination = 'dist/test/fvt/'
         return childProcess.execSync(`cd ./${folder.src.destination} && rm -rf ./logs/* && find . -name ".DS_*"|xargs rm -rf && `
-                + `cd ../../${folder.test.destination} && rm -rf ./logs/* && find . -name ".DS_*"|xargs rm -rf`, {stdio: 'inherit'});
+                + `cd ../../${folder.test.destination} && rm -rf ./logs/* && find . -name ".DS_*"|xargs rm -rf`, { stdio: 'inherit' });
     } else if (nodeEnv === 'ut') { // UT: folder.src.destination = 'dist/src/'  folder.test.destination = 'dist/test/fvt/'
         return childProcess.execSync(`cd ./${folder.src.destination} && rm -rf ./logs/* && find . -name ".DS_*"|xargs rm -rf && `
-                + `cd ../../${folder.test.destination} && rm -rf ./logs/* && find . -name ".DS_*"|xargs rm -rf`, {stdio: 'inherit'});
+                + `cd ../../${folder.test.destination} && rm -rf ./logs/* && find . -name ".DS_*"|xargs rm -rf`, { stdio: 'inherit' });
     } else { // Development: folder.src.destination = 'dist/'
-        return childProcess.execSync(`cd ./${folder.src.destination} && rm -rf ./logs/* && find . -name ".DS_*"|xargs rm -rf`, {stdio: 'inherit'});
+        return childProcess.execSync(`cd ./${folder.src.destination} && rm -rf ./logs/* && find . -name ".DS_*"|xargs rm -rf`, { stdio: 'inherit' });
     }
 }
 
