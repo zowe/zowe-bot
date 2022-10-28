@@ -141,51 +141,29 @@ export class Util {
         let maskingPatterns: IMaskingPattern[] = [];
         if (pattern === null && pattern !== undefined) {
             maskingPatterns = [
-                // From command
                 {
-                    start: '--password ',
-                    end: '( |$)',
-                },
-                // From dialog
-                {
-                    start: 'Password":"', // mattermost
-                    end: '"',
+                    pattern: '--password .*?( |$)',
+                    replacement: '--password ********',
                 },
                 {
-                    start: 'Password: \'', // MS Teams
-                    end: '\'',
+                    pattern: 'Password": {0,1}".*?"', //   "Password": "********" | "botPassword": "********"
+                    replacement: 'Password": "********"',
                 },
                 {
-                    start: 'Password":{"type":"plain_text_input","value":"', // Slack
-                    end: '"}',
-                },
-                // From server.yaml
-                {
-                    start: '"password": "',
-                    end: '"',
-                },
-                // From mattermost.yaml
-                {
-                    start: '"botAccessToken": "',
-                    end: '"',
-                },
-                // From slack.yaml
-                {
-                    start: '"signingSecret": "',
-                    end: '"',
+                    pattern: 'Password\': {0,1}\'.*?\'', //  'Password': '********'
+                    replacement: 'Password\': \'********\'',
                 },
                 {
-                    start: '"token": "',
-                    end: '"',
+                    pattern: 'token": {0,1}".*?"', // "botAccessToken": "********"  | "token": "********" | "appToken": "********"
+                    replacement: 'token": "********"',
                 },
                 {
-                    start: '"appToken": "',
-                    end: '"',
+                    pattern: 'Password":{"type":"plain_text_input","value":".*?"}',
+                    replacement: 'Password":{"type":"plain_text_input","value":"********"}',
                 },
-                // From msteams.yaml
                 {
-                    start: '"botPassword": "',
-                    end: '"',
+                    pattern: '"signingSecret": {0,1}".*?"',
+                    replacement: '"signingSecret": "********"',
                 },
             ];
         } else {
@@ -195,8 +173,8 @@ export class Util {
         let result = text;
         if (text !== undefined && text !== null && text.trim() !== '') {
             for (const pattern of maskingPatterns) {
-                const regex = new RegExp(`${pattern.start}.*?${pattern.end}`, 'ig');
-                result = result.replace(regex, `${pattern.start}********${pattern.end}`);
+                const regex = new RegExp(pattern.pattern, 'ig');
+                result = result.replace(regex, pattern.replacement);
             }
         }
         return result;

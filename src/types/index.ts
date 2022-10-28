@@ -389,6 +389,6 @@ export interface IMsteamsBotLimit extends IBotLimit {
 }
 
 export interface IMaskingPattern {
-    start: string;
-    end: string;
+    pattern: string;
+    replacement: string;
 }
