@@ -13,6 +13,7 @@ import { ILogLevel, ILogOption } from '../types';
 import winston from 'winston';
 import fs from 'fs';
 import path from 'path';
+import { Util } from './Util';
 
 export class Logger {
     private static instance: Logger;
@@ -26,10 +27,11 @@ export class Logger {
 
         // Get log option
         this.option = {
-            filePath: `${__dirname}/../log/common-bot.log`,
+            filePath: `${__dirname}/../log/commonBot.log`,
             level: ILogLevel.INFO,
             maximumSize: null,
             maximumFile: null,
+            consoleSilent: true,
         };
 
         // Process environment variables
@@ -56,6 +58,15 @@ export class Logger {
             if (process.env.COMMONBOT_LOG_MAX_FILE !== undefined && process.env.COMMONBOT_LOG_MAX_FILE.trim() !== '') {
                 this.option.maximumFile = parseInt(process.env.COMMONBOT_LOG_MAX_FILE);
             }
+            if (process.env.COMMONBOT_LOG_CONSOLE_SILENT !== undefined && process.env.COMMONBOT_LOG_CONSOLE_SILENT.trim() !== '') {
+                if (process.env.COMMONBOT_LOG_CONSOLE_SILENT.trim().toLowerCase() === 'false') {
+                    this.option.consoleSilent = false;
+                } else {
+                    this.option.consoleSilent = true;
+                }
+            }
+
+            console.info(`Log option:\n${JSON.stringify(this.option, null, 4)}`);
         } catch (error) {
             console.error(`Failed to process the environment variables for Common Bot Framework!`);
             console.error(error.stack);
@@ -84,8 +95,8 @@ export class Logger {
             ],
         });
 
-        // Remove console log output in production and test env.
-        if (process.env.NODE_ENV === 'production') {
+        // Suppress console log output
+        if (this.option.consoleSilent === false) {
             this.logger.add( new winston.transports.Console({ format: combine(timestamp(), format) }));
         }
 
@@ -240,19 +251,23 @@ export class Logger {
         }
     }
 
-    debug(log: string) {
-        this.logger.debug(log);
+    public silly(log: string) {
+        this.logger.silly(Util.maskSensitiveInfo(log));
     }
 
-    error(log: string) {
-        this.logger.error(log);
+    public debug(log: string) {
+        this.logger.debug(Util.maskSensitiveInfo(log));
     }
 
-    warn(log: string) {
-        this.logger.warn(log);
+    public error(log: string) {
+        this.logger.error(Util.maskSensitiveInfo(log));
     }
 
-    info(log: string) {
-        this.logger.info(log);
+    public warn(log: string) {
+        this.logger.warn(Util.maskSensitiveInfo(log));
+    }
+
+    public info(log: string) {
+        this.logger.info(Util.maskSensitiveInfo(log));
     }
 }

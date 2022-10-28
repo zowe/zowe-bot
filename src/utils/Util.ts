@@ -10,6 +10,7 @@
 
 
 import * as nodeUtil from 'util';
+import { IMaskingPattern } from '../types';
 
 export class Util {
     // }
@@ -131,5 +132,73 @@ export class Util {
         } else {
             return `${dumpResultHeader}\n${Util.concatLines(result)}`;
         }
+    }
+
+    // Mask sensitive info. in the console or log output
+    static maskSensitiveInfo(text: string, pattern: IMaskingPattern = null): string {
+        // Patterns used to mask the sensitive info. in the log
+        // TODO: add one configuration file to track the pattern and make user able to customize it
+        let maskingPatterns: IMaskingPattern[] = [];
+        if (pattern === null && pattern !== undefined) {
+            maskingPatterns = [
+                // From command
+                {
+                    start: '--password ',
+                    end: '( |$)',
+                },
+                // From dialog
+                {
+                    start: 'Password":"', // mattermost
+                    end: '"',
+                },
+                {
+                    start: 'Password: \'', // MS Teams
+                    end: '\'',
+                },
+                {
+                    start: 'Password":{"type":"plain_text_input","value":"', // Slack
+                    end: '"}',
+                },
+                // From server.yaml
+                {
+                    start: '"password": "',
+                    end: '"',
+                },
+                // From mattermost.yaml
+                {
+                    start: '"botAccessToken": "',
+                    end: '"',
+                },
+                // From slack.yaml
+                {
+                    start: '"signingSecret": "',
+                    end: '"',
+                },
+                {
+                    start: '"token": "',
+                    end: '"',
+                },
+                {
+                    start: '"appToken": "',
+                    end: '"',
+                },
+                // From msteams.yaml
+                {
+                    start: '"botPassword": "',
+                    end: '"',
+                },
+            ];
+        } else {
+            maskingPatterns.push(pattern);
+        }
+
+        let result = text;
+        if (text !== undefined && text !== null && text.trim() !== '') {
+            for (const pattern of maskingPatterns) {
+                const regex = new RegExp(`${pattern.start}.*?${pattern.end}`, 'ig');
+                result = result.replace(regex, `${pattern.start}********${pattern.end}`);
+            }
+        }
+        return result;
     }
 }

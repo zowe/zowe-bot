@@ -108,10 +108,11 @@ export interface IBotOption {
 }
 
 export interface ILogOption {
-    filePath: string,
-    level: ILogLevel,
-    maximumSize: number,
-    maximumFile: number
+    filePath: string;
+    level: ILogLevel;
+    maximumSize: number;
+    maximumFile: number;
+    consoleSilent: boolean;
 }
 
 export interface IAppOption extends IHttpEndpoint {
@@ -385,4 +386,9 @@ export interface ISlackBotLimit extends IBotLimit {
 
 export interface IMsteamsBotLimit extends IBotLimit {
     fileAttachmentMaxNumber: number;
+}
+
+export interface IMaskingPattern {
+    start: string;
+    end: string;
 }
