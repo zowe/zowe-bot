@@ -100,11 +100,11 @@ export class Logger {
             this.logger.add( new winston.transports.Console({ format: combine(timestamp(), format) }));
         }
 
-        process.on("beforeExit", (code) => {
+        process.on('beforeExit', (code) => {
             this.logger.clear();
         });
 
-        process.on("exit", (code) => {
+        process.on('exit', (code) => {
             this.logger.end();
         });
 
