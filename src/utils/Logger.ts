@@ -1,19 +1,18 @@
 /*
-* This program and the accompanying materials are made available under the terms of the
-* Eclipse Public License v2.0 which accompanies this distribution, and is available at
-* https://www.eclipse.org/legal/epl-v20.html
-*
-* SPDX-License-Identifier: EPL-2.0
-*
-* Copyright Contributors to the Zowe Project.
-*/
+ * This program and the accompanying materials are made available under the terms of the
+ * Eclipse Public License v2.0 which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-v20.html
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Copyright Contributors to the Zowe Project.
+ */
 
-
-import { ILogLevel, ILogOption } from '../types';
+import {ILogLevel, ILogOption} from '../types';
 import winston from 'winston';
 import fs from 'fs';
 import path from 'path';
-import { Util } from './Util';
+import {Util} from './Util';
 
 export class Logger {
     private static instance: Logger;
@@ -36,75 +35,119 @@ export class Logger {
 
         // Process environment variables
         try {
-            if (process.env.COMMONBOT_LOG_FILE_PATH !== undefined && process.env.COMMONBOT_LOG_FILE_PATH.trim() !== '') {
+            if (
+                process.env.COMMONBOT_LOG_FILE_PATH !== undefined &&
+                process.env.COMMONBOT_LOG_FILE_PATH.trim() !== ''
+            ) {
                 this.option.filePath = process.env.COMMONBOT_LOG_FILE_PATH; // Set log file
             }
             // Create log file folder if not exist
             const filePath = path.dirname(this.option.filePath);
             if (fs.existsSync(filePath) === false) {
-                fs.mkdirSync(filePath, { recursive: true });
+                fs.mkdirSync(filePath, {recursive: true});
             }
-            if (process.env.COMMONBOT_LOG_LEVEL !== undefined && process.env.COMMONBOT_LOG_LEVEL.trim() !== '') {
-                const logLevels: string[] = [ILogLevel.ERROR, ILogLevel.WARN, ILogLevel.INFO, ILogLevel.DEBUG, ILogLevel.VERBOSE, ILogLevel.SILLY];
+            if (
+                process.env.COMMONBOT_LOG_LEVEL !== undefined &&
+                process.env.COMMONBOT_LOG_LEVEL.trim() !== ''
+            ) {
+                const logLevels: string[] = [
+                    ILogLevel.ERROR,
+                    ILogLevel.WARN,
+                    ILogLevel.INFO,
+                    ILogLevel.DEBUG,
+                    ILogLevel.VERBOSE,
+                    ILogLevel.SILLY,
+                ];
                 if (logLevels.includes(process.env.COMMONBOT_LOG_LEVEL)) {
-                    this.option.level = <ILogLevel>process.env.COMMONBOT_LOG_LEVEL;
+                    this.option.level = <ILogLevel>(
+                        process.env.COMMONBOT_LOG_LEVEL
+                    );
                 } else {
-                    console.error('Unsupported value specified in the variable COMMONBOT_LOG_LEVEL!');
+                    console.error(
+                        'Unsupported value specified in the variable COMMONBOT_LOG_LEVEL!'
+                    );
                 }
             }
-            if (process.env.COMMONBOT_LOG_MAX_SIZE !== undefined && process.env.COMMONBOT_LOG_MAX_SIZE.trim() !== '') {
-                this.option.maximumSize = parseInt(process.env.COMMONBOT_LOG_MAX_SIZE);
+            if (
+                process.env.COMMONBOT_LOG_MAX_SIZE !== undefined &&
+                process.env.COMMONBOT_LOG_MAX_SIZE.trim() !== ''
+            ) {
+                this.option.maximumSize = parseInt(
+                    process.env.COMMONBOT_LOG_MAX_SIZE
+                );
             }
-            if (process.env.COMMONBOT_LOG_MAX_FILE !== undefined && process.env.COMMONBOT_LOG_MAX_FILE.trim() !== '') {
-                this.option.maximumFile = parseInt(process.env.COMMONBOT_LOG_MAX_FILE);
+            if (
+                process.env.COMMONBOT_LOG_MAX_FILE !== undefined &&
+                process.env.COMMONBOT_LOG_MAX_FILE.trim() !== ''
+            ) {
+                this.option.maximumFile = parseInt(
+                    process.env.COMMONBOT_LOG_MAX_FILE
+                );
             }
-            if (process.env.COMMONBOT_LOG_CONSOLE_SILENT !== undefined && process.env.COMMONBOT_LOG_CONSOLE_SILENT.trim() !== '') {
-                if (process.env.COMMONBOT_LOG_CONSOLE_SILENT.trim().toLowerCase() === 'false') {
+            if (
+                process.env.COMMONBOT_LOG_CONSOLE_SILENT !== undefined &&
+                process.env.COMMONBOT_LOG_CONSOLE_SILENT.trim() !== ''
+            ) {
+                if (
+                    process.env.COMMONBOT_LOG_CONSOLE_SILENT.trim().toLowerCase() ===
+                    'false'
+                ) {
                     this.option.consoleSilent = false;
                 } else {
                     this.option.consoleSilent = true;
                 }
             }
 
-            console.info(`Log option:\n${JSON.stringify(this.option, null, 4)}`);
+            console.info(
+                `Log option:\n${JSON.stringify(this.option, null, 4)}`
+            );
         } catch (error) {
-            console.error(`Failed to process the environment variables for Common Bot Framework!`);
+            console.error(
+                'Failed to process the environment variables for Common Bot Framework!'
+            );
             console.error(error.stack);
+            // eslint-disable-next-line no-process-exit
             process.exit(1);
         }
 
         // const {combine, timestamp, colorize, label, printf} = winston.format;
-        const { combine, timestamp, printf } = winston.format;
+        const {combine, timestamp, printf} = winston.format;
 
         // Define customized format
         // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
-        const format = printf(({ timestamp, level, message, label }: any) => {
+        const format = printf(({timestamp, level, message, label}: any) => {
             return `${timestamp} [${level.toUpperCase()}] ${message}`;
         });
 
         // Create logger instance
-        this.logger = winston.createLogger( {
+        this.logger = winston.createLogger({
             level: this.option.level, // error: 0, warn: 1, info: 2, verbose: 3, debug: 4, silly: 5
             //   format: winston.format.combine(winston.format.timestamp(), winston.format.colorize(), winston.format.simple()),
-            transports: [new winston.transports.File({
-                filename: this.option.filePath,
-                maxsize: this.option.maximumSize,
-                maxFiles: this.option.maximumFile,
-                format: combine(timestamp(), format),
-                options: { flags: 'w' } }),
+            transports: [
+                new winston.transports.File({
+                    filename: this.option.filePath,
+                    maxsize: this.option.maximumSize,
+                    maxFiles: this.option.maximumFile,
+                    format: combine(timestamp(), format),
+                    options: {flags: 'w'},
+                }),
             ],
         });
 
         // Suppress console log output
         if (this.option.consoleSilent === false) {
-            this.logger.add( new winston.transports.Console({ format: combine(timestamp(), format) }));
+            this.logger.add(
+                new winston.transports.Console({
+                    format: combine(timestamp(), format),
+                })
+            );
         }
 
-        process.on('beforeExit', (code) => {
+        process.on('beforeExit', code => {
             this.logger.clear();
         });
 
-        process.on('exit', (code) => {
+        process.on('exit', code => {
             this.logger.end();
         });
 
@@ -129,7 +172,11 @@ export class Logger {
     //  - className: class name or class instance can be specified here
     //  - fileName: file name can be specified here
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    start(functionName: string | Record<string, any>, className?: string | Record<string, any>, fileName?: string) {
+    start(
+        functionName: string | Record<string, any>,
+        className?: string | Record<string, any>,
+        fileName?: string
+    ) {
         // Get function name
         let funName = '';
         if (arguments.length >= 1) {
@@ -153,7 +200,10 @@ export class Logger {
                     clsName = className;
                     break;
                 case 'object':
-                    if (className !== null && className.constructor !== undefined) {
+                    if (
+                        className !== null &&
+                        className.constructor !== undefined
+                    ) {
                         clsName = className.constructor.name;
                     } else {
                         clsName = '';
@@ -166,9 +216,16 @@ export class Logger {
 
         // Print start log
         if (arguments.length >= 3) {
-            this.logger.info(`${fileName} : ${clsName} : ${funName.replace(/bound /, '')}    start ===>`);
-        } else if (arguments.length == 2) {
-            this.logger.info(`${clsName} : ${funName.replace(/bound /, '')}    start ===>`);
+            this.logger.info(
+                `${fileName} : ${clsName} : ${funName.replace(
+                    /bound /,
+                    ''
+                )}    start ===>`
+            );
+        } else if (arguments.length === 2) {
+            this.logger.info(
+                `${clsName} : ${funName.replace(/bound /, '')}    start ===>`
+            );
         } else {
             this.logger.info(`${funName.replace(/bound /, '')}    start ===>`);
         }
@@ -179,7 +236,11 @@ export class Logger {
     //  - className: class name or class instance can be specified here
     //  - fileName: file name can be specified here
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    end(functionName: string | Record<string, any>, className?: string | Record<string, any>, fileName?: string) {
+    end(
+        functionName: string | Record<string, any>,
+        className?: string | Record<string, any>,
+        fileName?: string
+    ) {
         // Get function name
         let funName = '';
         if (arguments.length >= 1) {
@@ -203,7 +264,10 @@ export class Logger {
                     clsName = className;
                     break;
                 case 'object':
-                    if (className !== null && className.constructor !== undefined) {
+                    if (
+                        className !== null &&
+                        className.constructor !== undefined
+                    ) {
                         clsName = className.constructor.name;
                     } else {
                         clsName = '';
@@ -216,9 +280,16 @@ export class Logger {
 
         // Print end log
         if (arguments.length >= 3) {
-            this.logger.info(`${fileName} : ${clsName} : ${funName.replace(/bound /, '')}      end <===`);
-        } else if (arguments.length == 2) {
-            this.logger.info(`${clsName} : ${funName.replace(/bound /, '')}      end <===`);
+            this.logger.info(
+                `${fileName} : ${clsName} : ${funName.replace(
+                    /bound /,
+                    ''
+                )}      end <===`
+            );
+        } else if (arguments.length === 2) {
+            this.logger.info(
+                `${clsName} : ${funName.replace(/bound /, '')}      end <===`
+            );
         } else {
             this.logger.info(`${funName.replace(/bound /, '')}      end <===`);
         }
@@ -228,9 +299,15 @@ export class Logger {
     getErrorStack(newError: Error, caughtError: Error) {
         if (newError.stack === undefined && caughtError.stack === undefined) {
             return '';
-        } else if (newError.stack !== undefined && caughtError.stack === undefined) {
+        } else if (
+            newError.stack !== undefined &&
+            caughtError.stack === undefined
+        ) {
             return newError.stack;
-        } else if (newError.stack === undefined && caughtError.stack !== undefined) {
+        } else if (
+            newError.stack === undefined &&
+            caughtError.stack !== undefined
+        ) {
             return caughtError.stack;
         } else {
             // Get error stack

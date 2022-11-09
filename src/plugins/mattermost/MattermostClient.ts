@@ -1,28 +1,35 @@
 /*
-* This program and the accompanying materials are made available under the terms of the
-* Eclipse Public License v2.0 which accompanies this distribution, and is available at
-* https://www.eclipse.org/legal/epl-v20.html
-*
-* SPDX-License-Identifier: EPL-2.0
-*
-* Copyright Contributors to the Zowe Project.
-*/
+ * This program and the accompanying materials are made available under the terms of the
+ * Eclipse Public License v2.0 which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-v20.html
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Copyright Contributors to the Zowe Project.
+ */
 
-import { IChannel, IChattingType, IMattermostOption, IProtocol, IUser, IConnectionStatus } from '../../types';
-import type { SuperAgentRequest } from 'superagent';
+import {
+    IChannel,
+    IChattingType,
+    IMattermostOption,
+    IProtocol,
+    IUser,
+    IConnectionStatus,
+} from '../../types';
+import type {SuperAgentRequest} from 'superagent';
 
 import WebSocket from 'ws';
 import superagent from 'superagent';
 
-import { Logger } from '../../utils/Logger';
-import { Util } from '../../utils/Util';
-import { MattermostMiddleware } from './MattermostMiddleware';
+import {Logger} from '../../utils/Logger';
+import {Util} from '../../utils/Util';
+import {MattermostMiddleware} from './MattermostMiddleware';
 
 const logger = Logger.getInstance();
 
 export class MattermostClient {
-    private rejectUnauthorized: boolean = false;
-    private heartBeat: number = 60000; // It is in millisecond.
+    private rejectUnauthorized = false;
+    private heartBeat = 60000; // It is in millisecond.
     private autoReconnect = true;
 
     private middleware: MattermostMiddleware;
@@ -69,18 +76,26 @@ export class MattermostClient {
             this.connectionStatus = IConnectionStatus.CONNECTING;
 
             // First, authenticate by Mattermost web service API.
-            const response = await this.get(`${this.mattermostServerBaseUrl}/users/me`);
+            const response = await this.get(
+                `${this.mattermostServerBaseUrl}/users/me`
+            );
             logger.debug(Util.dumpResponse(response));
 
             if (response.statusCode === 200) {
-                this.middleware.updateBotUser({ id: response.body.id, name: response.body.username, email: '' });
-                logger.debug(`Logged in through REST API as user ${response.body.username}`);
+                this.middleware.updateBotUser({
+                    id: response.body.id,
+                    name: response.body.username,
+                    email: '',
+                });
+                logger.debug(
+                    `Logged in through REST API as user ${response.body.username}`
+                );
 
                 // Get bot's Team id.
                 await this.getTeamId();
 
                 // Second, connect the WebSocket and authenticate with an authentication challenge.
-                const options = { rejectUnauthorized: this.rejectUnauthorized };
+                const options = {rejectUnauthorized: this.rejectUnauthorized};
                 let webSocketUrl = undefined;
                 if (this.option.protocol === IProtocol.HTTPS) {
                     webSocketUrl = `${IProtocol.WSS}://${this.option.hostName}:${this.option.port}${this.option.basePath}/websocket`;
@@ -102,7 +117,9 @@ export class MattermostClient {
                 this.ws.on('pong', this.onPong.bind(this));
                 this.ws.on('close', this.onClose.bind(this));
             } else {
-                logger.error(`Failed to connect to Mattermost server:  ${response.statusMessage}`);
+                logger.error(
+                    `Failed to connect to Mattermost server:  ${response.statusMessage}`
+                );
 
                 this.connectionStatus = IConnectionStatus.NOT_CONNECTED;
                 this.reconnect();
@@ -138,14 +155,15 @@ export class MattermostClient {
 
             this.reconnectCount += 1;
             const reconnectTimeout = this.reconnectCount * 2000;
-            logger.debug(`Reconnect to Mattermost server in ${reconnectTimeout/1000} seconds.`);
-            setTimeout(
-                    () => {
-                        logger.debug('Trying to reconnect to Mattermost server.');
-                        this.connect();
-                    },
-                    reconnectTimeout,
+            logger.debug(
+                `Reconnect to Mattermost server in ${
+                    reconnectTimeout / 1000
+                } seconds.`
             );
+            setTimeout(() => {
+                logger.debug('Trying to reconnect to Mattermost server.');
+                this.connect();
+            }, reconnectTimeout);
         } catch (error) {
             logger.error(Util.dumpObject(error));
             // Print exception stack
@@ -156,7 +174,7 @@ export class MattermostClient {
     // Disconnect with Mattermost server.
     disconnect(): void {
         try {
-        // Clear the ping/pong timer.
+            // Clear the ping/pong timer.
             if (this.pongTimer !== null) {
                 clearInterval(this.pongTimer);
                 this.pongTimer = null;
@@ -189,21 +207,29 @@ export class MattermostClient {
 
             this.pongTimer = setInterval(() => {
                 if (this.connectionStatus !== IConnectionStatus.ALIVE) {
-                    logger.error('The websocket is not alive now, try to reconnect.');
+                    logger.error(
+                        'The websocket is not alive now, try to reconnect.'
+                    );
                     this.reconnect();
                     return;
                 }
-                if ((this.lastPongTime !== null && this.lastPongTime !== undefined)
-                && ((Date.now() - this.lastPongTime) > (3 * this.heartBeat))) {
-                    logger.error(`It has been too long after receiving preview pong, try to reconnect.`);
+                if (
+                    this.lastPongTime !== null &&
+                    this.lastPongTime !== undefined &&
+                    Date.now() - this.lastPongTime > 3 * this.heartBeat
+                ) {
+                    logger.error(
+                        'It has been too long after receiving preview pong, try to reconnect.'
+                    );
                     this.connectionStatus = IConnectionStatus.EXPIRED;
                     this.reconnect();
                     return;
                 }
-                logger.debug('Sending heart-beating ping to mattermost server.');
+                logger.debug(
+                    'Sending heart-beating ping to mattermost server.'
+                );
                 this.ws.ping();
-            },
-            this.heartBeat);
+            }, this.heartBeat);
         } catch (error) {
             logger.error(Util.dumpObject(error));
             // Print exception stack
@@ -221,13 +247,16 @@ export class MattermostClient {
 
             if (message.event !== undefined && message.event === 'posted') {
                 this.middleware.processMessage(message);
-            } else if (message.event !== undefined && message.event === 'hello') {
-            // Once successfully authenticated, the Mattermost server will pass a hello WebSocket event containing server version over the connection.
-            // So use the time of receiving hello event as the first pong time.
+            } else if (
+                message.event !== undefined &&
+                message.event === 'hello'
+            ) {
+                // Once successfully authenticated, the Mattermost server will pass a hello WebSocket event containing server version over the connection.
+                // So use the time of receiving hello event as the first pong time.
                 this.lastPongTime = Date.now(); // Timestamp of previous pong.
             } else {
-            // Add more event handling if they are needed in the future.
-            /*
+                // Add more event handling if they are needed in the future.
+                /*
                 added_to_team
                 authentication_challenge
                 channel_converted
@@ -292,10 +321,13 @@ export class MattermostClient {
     }
 
     private onClose(code: number, reason: string): void {
-        logger.debug(`On event close, the code is ${code} and reason is ${reason}.`);
+        logger.debug(
+            `On event close, the code is ${code} and reason is ${reason}.`
+        );
         this.connectionStatus = IConnectionStatus.CLOSED;
 
-        if (this.autoReconnect) { // The connection is closed, try to connect.
+        if (this.autoReconnect) {
+            // The connection is closed, try to connect.
             this.reconnect();
         }
     }
@@ -307,11 +339,16 @@ export class MattermostClient {
 
     // Send message to Mattermost channel, group or direct message through Mattermost web service Rest API posts.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async sendMessage(message: Record<string, any>, channelId: string, rootId: string): Promise<void> {
+    async sendMessage(
+        message: Record<string, any>,
+        channelId: string,
+        rootId: string
+    ): Promise<void> {
         logger.start(this.sendMessage, this);
 
         try {
-            const postObject: Record<string, any> = { // eslint-disable-line @typescript-eslint/no-explicit-any
+            const postObject: Record<string, any> = {
+                // eslint-disable-line @typescript-eslint/no-explicit-any
                 message: message,
                 root_id: rootId,
                 channel_id: channelId,
@@ -327,8 +364,9 @@ export class MattermostClient {
             }
 
             logger.debug(`The postObject is ${Util.dumpObject(postObject)}`);
-            await this.post(`${this.mattermostServerBaseUrl}/posts`)
-                    .send(JSON.stringify(postObject));
+            await this.post(`${this.mattermostServerBaseUrl}/posts`).send(
+                JSON.stringify(postObject)
+            );
         } catch (error) {
             logger.error(Util.dumpObject(error));
             // Print exception stack
@@ -344,7 +382,9 @@ export class MattermostClient {
         logger.start(this.authenticate, this);
         try {
             if (this.connectionStatus !== IConnectionStatus.ALIVE) {
-                logger.error('Could not send message because the websocket is not alive now.');
+                logger.error(
+                    'Could not send message because the websocket is not alive now.'
+                );
                 return;
             }
 
@@ -365,8 +405,9 @@ export class MattermostClient {
         logger.start(this.openDialog, this);
 
         try {
-            await this.post(`${this.mattermostServerBaseUrl}/actions/dialogs/open`)
-                    .send(JSON.stringify(payload));
+            await this.post(
+                `${this.mattermostServerBaseUrl}/actions/dialogs/open`
+            ).send(JSON.stringify(payload));
         } catch (error) {
             // Print exception stack
             logger.error(logger.getErrorStack(new Error(error.name), error));
@@ -380,18 +421,25 @@ export class MattermostClient {
         logger.start(this.getTeamId, this);
 
         try {
-            const response = await this.get(`${this.mattermostServerBaseUrl}/users/me/teams`);
+            const response = await this.get(
+                `${this.mattermostServerBaseUrl}/users/me/teams`
+            );
             logger.debug(Util.dumpResponse(response));
 
             if (response.statusCode === 200) {
                 for (const team of response.body) {
-                    if (team.name.toLowerCase() === this.option.teamUrl.toLowerCase()) {
+                    if (
+                        team.name.toLowerCase() ===
+                        this.option.teamUrl.toLowerCase()
+                    ) {
                         logger.debug(`Found team id: ${team.id}`);
                         this.teamId = team.id;
                     }
                 }
             } else {
-                logger.error(`Failed to get team id for bot user: ${response.statusMessage}`);
+                logger.error(
+                    `Failed to get team id for bot user: ${response.statusMessage}`
+                );
             }
         } catch (error) {
             logger.error(Util.dumpObject(error));
@@ -407,7 +455,9 @@ export class MattermostClient {
         logger.start(this.getChannelById, this);
 
         try {
-            const response = await this.get(`${this.mattermostServerBaseUrl}/channels/${id}`);
+            const response = await this.get(
+                `${this.mattermostServerBaseUrl}/channels/${id}`
+            );
 
             if (response.statusCode === 200) {
                 const channel = {
@@ -417,7 +467,9 @@ export class MattermostClient {
                 };
                 return channel;
             } else {
-                logger.error(`Failed to get channel which id is ${id}: ${response.statusMessage}`);
+                logger.error(
+                    `Failed to get channel which id is ${id}: ${response.statusMessage}`
+                );
                 return null;
             }
         } catch (error) {
@@ -434,11 +486,14 @@ export class MattermostClient {
         logger.start(this.getChannelByName, this);
 
         try {
-            if (this.teamId === null) { // could not query channel by channel name without teamId.
+            if (this.teamId === null) {
+                // could not query channel by channel name without teamId.
                 logger.error('Could not get channel info without team id.');
                 return null;
             }
-            const response = await this.get(`${this.mattermostServerBaseUrl}/teams/${this.teamId}/channels/name/${name}`);
+            const response = await this.get(
+                `${this.mattermostServerBaseUrl}/teams/${this.teamId}/channels/name/${name}`
+            );
 
             if (response.statusCode === 200) {
                 const channel = {
@@ -448,7 +503,9 @@ export class MattermostClient {
                 };
                 return channel;
             } else {
-                logger.error(`Failed to get channel named ${name}: ${response.statusMessage}`);
+                logger.error(
+                    `Failed to get channel named ${name}: ${response.statusMessage}`
+                );
                 return null;
             }
         } catch (error) {
@@ -462,16 +519,22 @@ export class MattermostClient {
 
     getChattingType(type: string): IChattingType {
         let chattingType: IChattingType = IChattingType.UNKNOWN;
-        if (type == 'D') { // direct message
+        if (type === 'D') {
+            // direct message
             chattingType = IChattingType.PERSONAL;
-        } else if (type == 'O') { // public channel
+        } else if (type === 'O') {
+            // public channel
             chattingType = IChattingType.PUBLIC_CHANNEL;
-        } else if (type == 'P') { // private channel
+        } else if (type === 'P') {
+            // private channel
             chattingType = IChattingType.PRIVATE_CHANNEL;
-        } else if (type == 'G') { // group chat
+        } else if (type === 'G') {
+            // group chat
             chattingType = IChattingType.GROUP;
         } else {
-            logger.warn(`Not supported channel type for the current Mattermost adapter.`);
+            logger.warn(
+                'Not supported channel type for the current Mattermost adapter.'
+            );
         }
         return chattingType;
     }
@@ -481,15 +544,23 @@ export class MattermostClient {
         logger.start(this.getUserById, this);
 
         try {
-            const response = await this.get(`${this.mattermostServerBaseUrl}/users/${id}`);
+            const response = await this.get(
+                `${this.mattermostServerBaseUrl}/users/${id}`
+            );
             logger.debug(Util.dumpResponse(response));
 
             if (response.statusCode === 200) {
-                const user: IUser = { id: response.body.id, name: response.body.username, email: response.body.email };
+                const user: IUser = {
+                    id: response.body.id,
+                    name: response.body.username,
+                    email: response.body.email,
+                };
                 this.middleware.addUser(response.body.id, user);
                 return user;
             } else {
-                logger.error(`Failed to get user info for userId ${id}: ${response.statusMessage}`);
+                logger.error(
+                    `Failed to get user info for userId ${id}: ${response.statusMessage}`
+                );
                 return null;
             }
         } catch (error) {
@@ -505,10 +576,11 @@ export class MattermostClient {
         logger.start(this.post, this);
 
         try {
-            const agent = superagent.post(url)
-                    .set('Authorization', `BEARER ${this.option.botAccessToken}`)
-                    .set('Accept', 'application/json')
-                    .set('Content-Type', 'application/json');
+            const agent = superagent
+                .post(url)
+                .set('Authorization', `BEARER ${this.option.botAccessToken}`)
+                .set('Accept', 'application/json')
+                .set('Content-Type', 'application/json');
 
             if (this.option.protocol === 'https') {
                 agent.ca(this.option.tlsCertificate);
@@ -531,10 +603,11 @@ export class MattermostClient {
         const res: Record<string, any> = {}; // eslint-disable-line @typescript-eslint/no-explicit-any
         try {
             logger.debug(`url is ${url}`);
-            const request = superagent.get(url)
-                    .set('Authorization', `BEARER ${this.option.botAccessToken}`)
-                    .set('Accept', 'application/json')
-                    .set('Content-Type', 'application/json');
+            const request = superagent
+                .get(url)
+                .set('Authorization', `BEARER ${this.option.botAccessToken}`)
+                .set('Accept', 'application/json')
+                .set('Content-Type', 'application/json');
             if (this.option.protocol === 'https') {
                 request.ca(this.option.tlsCertificate);
             }

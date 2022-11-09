@@ -1,31 +1,45 @@
 /*
-* This program and the accompanying materials are made available under the terms of the
-* Eclipse Public License v2.0 which accompanies this distribution, and is available at
-* https://www.eclipse.org/legal/epl-v20.html
-*
-* SPDX-License-Identifier: EPL-2.0
-*
-* Copyright Contributors to the Zowe Project.
-*/
+ * This program and the accompanying materials are made available under the terms of the
+ * Eclipse Public License v2.0 which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-v20.html
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Copyright Contributors to the Zowe Project.
+ */
 
-import { IBotOption, IChatContextData, IChatToolType, IMattermostBotLimit, IMessage, IMessageHandlerFunction, IMessageMatcherFunction,
-    IMsteamsBotLimit, IRouteHandlerFunction, ISlackBotLimit } from './types';
+import {
+    IBotOption,
+    IChatContextData,
+    IChatToolType,
+    IMattermostBotLimit,
+    IMessage,
+    IMessageHandlerFunction,
+    IMessageMatcherFunction,
+    IMsteamsBotLimit,
+    IRouteHandlerFunction,
+    ISlackBotLimit,
+} from './types';
 
-import { Listener } from './Listener';
-import { Logger } from './utils/Logger';
-import { Router } from './Router';
-import { Middleware } from './Middleware';
+import {Listener} from './Listener';
+import {Logger} from './utils/Logger';
+import {Router} from './Router';
+import {Middleware} from './Middleware';
 
 import fs from 'fs';
-import { BotLimit } from './BotLimit';
-import { MattermostBotLimit } from './plugins/mattermost/MattermostBotLimit';
-import { SlackBotLimit } from './plugins/slack/SlackBotLimit';
-import { MsteamsBotLimit } from './plugins/msteams/MsteamsBotLimit';
+import {BotLimit} from './BotLimit';
+import {MattermostBotLimit} from './plugins/mattermost/MattermostBotLimit';
+import {SlackBotLimit} from './plugins/slack/SlackBotLimit';
+import {MsteamsBotLimit} from './plugins/msteams/MsteamsBotLimit';
 
 const logger = Logger.getInstance();
 export class CommonBot {
     private option: IBotOption;
-    private limit: BotLimit | MattermostBotLimit | SlackBotLimit | MsteamsBotLimit;
+    private limit:
+        | BotLimit
+        | MattermostBotLimit
+        | SlackBotLimit
+        | MsteamsBotLimit;
     private middleware: Middleware;
     private listeners: Listener[]; // MsteamsListener | SlackListener[] | MattermostListener[];
     private router: Router; // | MsteamsRouter | SlackRouter | MattermostRouter;
@@ -85,7 +99,10 @@ export class CommonBot {
     }
 
     // Listen all messages send to bot
-    async listen(matcher: IMessageMatcherFunction, handler: IMessageHandlerFunction): Promise<void> {
+    async listen(
+        matcher: IMessageMatcherFunction,
+        handler: IMessageHandlerFunction
+    ): Promise<void> {
         // Print start log
         logger.start(this.listen, this);
 
@@ -95,15 +112,29 @@ export class CommonBot {
 
             // Create listener
             let listener: Listener = null;
-            const pluginFileName = `${chatToolType.substring(0, 1).toUpperCase()}${chatToolType.substring(1)}Listener`;
-            logger.info(`Loading listener ${chatToolType}/${pluginFileName} ...`);
-            if (fs.existsSync(`${__dirname}/plugins/${chatToolType}`) === false ) {
+            const pluginFileName = `${chatToolType
+                .substring(0, 1)
+                .toUpperCase()}${chatToolType.substring(1)}Listener`;
+            logger.info(
+                `Loading listener ${chatToolType}/${pluginFileName} ...`
+            );
+            if (
+                fs.existsSync(`${__dirname}/plugins/${chatToolType}`) === false
+            ) {
                 logger.error(`Unsupported chat tool: ${chatToolType}`);
-                throw new Error(`Unsupported chat tool`);
+                throw new Error('Unsupported chat tool');
             } else {
-                if (fs.existsSync(`${__dirname}/plugins/${chatToolType}/${pluginFileName}.js`) === false) {
-                    logger.error(`The listener file "${__dirname}/plugins/${chatToolType}/${pluginFileName}.js" does not exist!`);
-                    throw new Error(`The required listener file "${__dirname}/plugins/${chatToolType}/${pluginFileName}.js" does not exist!`);
+                if (
+                    fs.existsSync(
+                        `${__dirname}/plugins/${chatToolType}/${pluginFileName}.js`
+                    ) === false
+                ) {
+                    logger.error(
+                        `The listener file "${__dirname}/plugins/${chatToolType}/${pluginFileName}.js" does not exist!`
+                    );
+                    throw new Error(
+                        `The required listener file "${__dirname}/plugins/${chatToolType}/${pluginFileName}.js" does not exist!`
+                    );
                 } else {
                     const ChatToolListener = require(`./plugins/${chatToolType}/${pluginFileName}`);
                     listener = new ChatToolListener[pluginFileName](this);
@@ -133,7 +164,10 @@ export class CommonBot {
     }
 
     // Set webhook router
-    async route(basePath: string, handler: IRouteHandlerFunction): Promise<void> {
+    async route(
+        basePath: string,
+        handler: IRouteHandlerFunction
+    ): Promise<void> {
         // Print start log
         logger.start(this.route, this);
 
@@ -142,15 +176,27 @@ export class CommonBot {
             const chatToolType = this.option.chatTool.type;
 
             // Create router
-            const pluginFileName = `${chatToolType.substring(0, 1).toUpperCase()}${chatToolType.substring(1)}Router`;
+            const pluginFileName = `${chatToolType
+                .substring(0, 1)
+                .toUpperCase()}${chatToolType.substring(1)}Router`;
             logger.info(`Loading router ${chatToolType}/${pluginFileName} ...`);
-            if (fs.existsSync(`${__dirname}/plugins/${chatToolType}`) === false ) {
+            if (
+                fs.existsSync(`${__dirname}/plugins/${chatToolType}`) === false
+            ) {
                 logger.error(`Unsupported chat tool: ${chatToolType}`);
-                throw new Error(`Unsupported chat tool`);
+                throw new Error('Unsupported chat tool');
             } else {
-                if (fs.existsSync(`${__dirname}/plugins/${chatToolType}/${pluginFileName}.js`) === false) {
-                    logger.error(`The router file "${__dirname}/plugins/${chatToolType}/${pluginFileName}.js" does not exist!`);
-                    throw new Error(`The required router file "${__dirname}/plugins/${chatToolType}/${pluginFileName}.js" does not exist!`);
+                if (
+                    fs.existsSync(
+                        `${__dirname}/plugins/${chatToolType}/${pluginFileName}.js`
+                    ) === false
+                ) {
+                    logger.error(
+                        `The router file "${__dirname}/plugins/${chatToolType}/${pluginFileName}.js" does not exist!`
+                    );
+                    throw new Error(
+                        `The required router file "${__dirname}/plugins/${chatToolType}/${pluginFileName}.js" does not exist!`
+                    );
                 } else {
                     const ChatToolRouter = require(`./plugins/${chatToolType}/${pluginFileName}`);
                     this.router = new ChatToolRouter[pluginFileName](this);
@@ -174,7 +220,10 @@ export class CommonBot {
     }
 
     // Send message to channel
-    async send(chatContextData: IChatContextData, messages: IMessage[]): Promise<void> {
+    async send(
+        chatContextData: IChatContextData,
+        messages: IMessage[]
+    ): Promise<void> {
         // Print start log
         logger.start(this.send, this);
 

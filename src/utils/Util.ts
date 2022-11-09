@@ -1,16 +1,15 @@
 /*
-* This program and the accompanying materials are made available under the terms of the
-* Eclipse Public License v2.0 which accompanies this distribution, and is available at
-* https://www.eclipse.org/legal/epl-v20.html
-*
-* SPDX-License-Identifier: EPL-2.0
-*
-* Copyright Contributors to the Zowe Project.
-*/
-
+ * This program and the accompanying materials are made available under the terms of the
+ * Eclipse Public License v2.0 which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-v20.html
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Copyright Contributors to the Zowe Project.
+ */
 
 import * as nodeUtil from 'util';
-import { IMaskingPattern } from '../types';
+import {IMaskingPattern} from '../types';
 
 export class Util {
     // }
@@ -18,24 +17,30 @@ export class Util {
     // Dump JavaScript object
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     static dumpObject(obj: Record<string, any>, depth: number = null): string {
-        return nodeUtil.inspect(obj, { compact: false, depth: depth });
+        return nodeUtil.inspect(obj, {compact: false, depth: depth});
     }
 
     // Dump request
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
-    static dumpRequest(req: any, formatted: boolean = false, includeAllProperties: boolean = false): string {
+    static dumpRequest(
+        req: any,
+        formatted = false,
+        includeAllProperties = false
+    ): string {
         // Check input parameter
         if (req === undefined || req === null) {
             return 'Request is undefined';
         }
 
         // Set dump result header
-        const dumpResultHeader = `Dump request for URL: ${req.method} ${req.protocol}://${req.get('host')}${req.originalUrl}`;
+        const dumpResultHeader = `Dump request for URL: ${req.method} ${
+            req.protocol
+        }://${req.get('host')}${req.originalUrl}`;
 
         // Dump
         let result = '';
         if (includeAllProperties) {
-            result = nodeUtil.inspect(req, { compact: false, depth: null });
+            result = nodeUtil.inspect(req, {compact: false, depth: null});
         } else {
             // Set dumped fields
             const dumpedFields = {
@@ -56,7 +61,10 @@ export class Util {
                 statusMessage: req.statusMessage,
             };
 
-            result = nodeUtil.inspect(dumpedFields, { compact: false, depth: null });
+            result = nodeUtil.inspect(dumpedFields, {
+                compact: false,
+                depth: null,
+            });
         }
 
         if (formatted) {
@@ -79,22 +87,27 @@ export class Util {
 
     // Dump response
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
-    static dumpResponse(res: any, formatted: boolean = false, includeAllProperties: boolean = false): string {
+    static dumpResponse(
+        res: any,
+        formatted = false,
+        includeAllProperties = false
+    ): string {
         // Check input parameter
         if (res === undefined || res === null) {
             return 'Response is undefined';
         }
 
         // Set dump result header
-        let dumpResultHeader = `Dump response for URL: `;
+        let dumpResultHeader = 'Dump response for URL: ';
         if (res.request !== undefined) {
-            dumpResultHeader = dumpResultHeader + `${res.request.method} ${res.request.url}`;
+            dumpResultHeader =
+                dumpResultHeader + `${res.request.method} ${res.request.url}`;
         }
 
         // Dump
         let result = '';
         if (includeAllProperties) {
-            result = nodeUtil.inspect(res, { compact: false, depth: null });
+            result = nodeUtil.inspect(res, {compact: false, depth: null});
         } else {
             // Set dumped fields
             const dumpedFields = {
@@ -124,7 +137,10 @@ export class Util {
                 links: res.links,
             };
 
-            result = nodeUtil.inspect(dumpedFields, { compact: false, depth: null });
+            result = nodeUtil.inspect(dumpedFields, {
+                compact: false,
+                depth: null,
+            });
         }
 
         if (formatted) {
@@ -135,7 +151,10 @@ export class Util {
     }
 
     // Mask sensitive info. in the console or log output
-    static maskSensitiveInfo(text: string, pattern: IMaskingPattern = null): string {
+    static maskSensitiveInfo(
+        text: string,
+        pattern: IMaskingPattern = null
+    ): string {
         // Patterns used to mask the sensitive info. in the log
         // TODO: add one configuration file to track the pattern and make user able to customize it
         let maskingPatterns: IMaskingPattern[] = [];
@@ -150,16 +169,18 @@ export class Util {
                     replacement: 'Password": "********"',
                 },
                 {
-                    pattern: 'Password\': {0,1}\'.*?\'', //  'Password': '********'
-                    replacement: 'Password\': \'********\'',
+                    pattern: "Password': {0,1}'.*?'", //  'Password': '********'
+                    replacement: "Password': '********'",
                 },
                 {
                     pattern: 'token": {0,1}".*?"', // "botAccessToken": "********"  | "token": "********" | "appToken": "********"
                     replacement: 'token": "********"',
                 },
                 {
-                    pattern: 'Password":{"type":"plain_text_input","value":".*?"}',
-                    replacement: 'Password":{"type":"plain_text_input","value":"********"}',
+                    pattern:
+                        'Password":{"type":"plain_text_input","value":".*?"}',
+                    replacement:
+                        'Password":{"type":"plain_text_input","value":"********"}',
                 },
                 {
                     pattern: '"signingSecret": {0,1}".*?"',

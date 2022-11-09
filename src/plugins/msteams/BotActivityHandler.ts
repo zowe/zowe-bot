@@ -1,25 +1,40 @@
 /*
-* This program and the accompanying materials are made available under the terms of the
-* Eclipse Public License v2.0 which accompanies this distribution, and is available at
-* https://www.eclipse.org/legal/epl-v20.html
-*
-* SPDX-License-Identifier: EPL-2.0
-*
-* Copyright Contributors to the Zowe Project.
-*/
+ * This program and the accompanying materials are made available under the terms of the
+ * Eclipse Public License v2.0 which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-v20.html
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Copyright Contributors to the Zowe Project.
+ */
 
-import type { NextFunction } from 'express';
-import { IChatContextData, TaskModuleTaskInfo, IUser, IPayloadType, IEvent, IActionType } from '../../types';
+import type {NextFunction} from 'express';
+import {
+    IChatContextData,
+    TaskModuleTaskInfo,
+    IUser,
+    IPayloadType,
+    IEvent,
+    IActionType,
+} from '../../types';
 
-import { TurnContext, TeamsActivityHandler, TeamsInfo, ChannelInfo, TaskModuleRequest, TaskModuleResponse, CardFactory } from 'botbuilder';
+import {
+    TurnContext,
+    TeamsActivityHandler,
+    TeamsInfo,
+    ChannelInfo,
+    TaskModuleRequest,
+    TaskModuleResponse,
+    CardFactory,
+} from 'botbuilder';
 
-import { IChattingType } from '../../types';
-import { Logger } from '../../utils/Logger';
-import { Util } from '../../utils/Util';
-import { CommonBot } from '../../CommonBot';
-import { MsteamsListener } from './MsteamsListener';
-import { MsteamsRouter } from './MsteamsRouter';
-import { MsteamsMiddleware } from './MsteamsMiddleware';
+import {IChattingType} from '../../types';
+import {Logger} from '../../utils/Logger';
+import {Util} from '../../utils/Util';
+import {CommonBot} from '../../CommonBot';
+import {MsteamsListener} from './MsteamsListener';
+import {MsteamsRouter} from './MsteamsRouter';
+import {MsteamsMiddleware} from './MsteamsMiddleware';
 
 const logger = Logger.getInstance();
 
@@ -42,8 +57,10 @@ export class BotActivityHandler extends TeamsActivityHandler {
         // Bing this pointer
         this.processMessage = this.processMessage.bind(this);
         this.updateConversation = this.updateConversation.bind(this);
-        this.handleTeamsTaskModuleFetch = this.handleTeamsTaskModuleFetch.bind(this);
-        this.handleTeamsTaskModuleSubmit = this.handleTeamsTaskModuleSubmit.bind(this);
+        this.handleTeamsTaskModuleFetch =
+            this.handleTeamsTaskModuleFetch.bind(this);
+        this.handleTeamsTaskModuleSubmit =
+            this.handleTeamsTaskModuleSubmit.bind(this);
 
         // Monitor message event
         this.onMessage(this.processMessage);
@@ -55,37 +72,65 @@ export class BotActivityHandler extends TeamsActivityHandler {
     }
 
     // Process message
-    async processMessage(context: TurnContext, next: NextFunction): Promise<void> {
+    async processMessage(
+        context: TurnContext,
+        next: NextFunction
+    ): Promise<void> {
         // Print start log
         logger.start(this.processMessage, this);
 
         try {
             // Remove mentions from message
             TurnContext.removeRecipientMention(context.activity);
-            logger.debug(`MS Teams context: ${JSON.stringify(context, null, 2)}`);
+            logger.debug(
+                `MS Teams context: ${JSON.stringify(context, null, 2)}`
+            );
 
             // Get conversation reference
-            const conversationReference = TurnContext.getConversationReference(context.activity);
-            logger.debug(`conversationReference: ${JSON.stringify(conversationReference, null, 2)}`);
+            const conversationReference = TurnContext.getConversationReference(
+                context.activity
+            );
+            logger.debug(
+                `conversationReference: ${JSON.stringify(
+                    conversationReference,
+                    null,
+                    2
+                )}`
+            );
 
             // Get chatting type
-            const chattingType = this.getChattingType(context.activity.conversation.conversationType);
+            const chattingType = this.getChattingType(
+                context.activity.conversation.conversationType
+            );
 
-            if (chattingType == IChattingType.PUBLIC_CHANNEL) {
-                this.cacheServiceUrl(context.activity.channelData.channel.id, conversationReference.serviceUrl);
-            } else if (chattingType == IChattingType.PERSONAL) {
-                this.cacheServiceUrl(context.activity.from.id, conversationReference.serviceUrl);
-            } else if (chattingType == IChattingType.GROUP) {
-                this.cacheServiceUrl(context.activity.conversation.id, conversationReference.serviceUrl);
+            if (chattingType === IChattingType.PUBLIC_CHANNEL) {
+                this.cacheServiceUrl(
+                    context.activity.channelData.channel.id,
+                    conversationReference.serviceUrl
+                );
+            } else if (chattingType === IChattingType.PERSONAL) {
+                this.cacheServiceUrl(
+                    context.activity.from.id,
+                    conversationReference.serviceUrl
+                );
+            } else if (chattingType === IChattingType.GROUP) {
+                this.cacheServiceUrl(
+                    context.activity.conversation.id,
+                    conversationReference.serviceUrl
+                );
             } else {
-                logger.error(`${IChattingType.UNKNOWN} type, Couldn't cache service Url`);
+                logger.error(
+                    `${IChattingType.UNKNOWN} type, Couldn't cache service Url`
+                );
                 return;
             }
 
             // Cache channel info
             if (context.activity.conversation.conversationType === 'channel') {
                 this.channels = await TeamsInfo.getTeamChannels(context);
-                logger.debug(`Channel info: ${JSON.stringify(this.channels, null, 2)}`);
+                logger.debug(
+                    `Channel info: ${JSON.stringify(this.channels, null, 2)}`
+                );
             }
 
             // Get mentioned bot name
@@ -94,10 +139,23 @@ export class BotActivityHandler extends TeamsActivityHandler {
             // Search the user from cached users.
             let user = this.getUser(context.activity.from.id);
             // if user have not been cached, then search from the msteams server and cache it
-            if (user === undefined ) {
-                const userProfile = await TeamsInfo.getMember(context, context.activity.from.id);
-                logger.debug(`Cache the user info: ${JSON.stringify(userProfile, null, 2)}`);
-                user = { id: context.activity.from.id, name: context.activity.from.name, email: userProfile.email };
+            if (user === undefined) {
+                const userProfile = await TeamsInfo.getMember(
+                    context,
+                    context.activity.from.id
+                );
+                logger.debug(
+                    `Cache the user info: ${JSON.stringify(
+                        userProfile,
+                        null,
+                        2
+                    )}`
+                );
+                user = {
+                    id: context.activity.from.id,
+                    name: context.activity.from.name,
+                    email: userProfile.email,
+                };
                 this.addUser(context.activity.from.id, user);
             }
             // Create chat context data
@@ -110,38 +168,47 @@ export class BotActivityHandler extends TeamsActivityHandler {
             // Activity data for the conversation: personal
             //    {"_respondedRef":{"responded":false},"_turnState":{},"_onSendActivities":[],"_onUpdateActivity":[],"_onDeleteActivity":[],"_turnLocale":"turn.locale","bufferedReplyActivities":[],"_adapter":{"middleware":{"middleware":[null]},"settings":{"appId":"c52ee95f-973d-41fd-bb78-27c75a2b1be4","appPassword":"~2dLk-CJtB09a9E.8sE_.Tx.Scm.LB-6J4"},"credentials":{"refreshingToken":null,"appId":"c52ee95f-973d-41fd-bb78-27c75a2b1be4","_tenant":"botframework.com","_oAuthEndpoint":"https://login.microsoftonline.com/botframework.com","authenticationContext":{"_authority":{"_log":null,"_url":{"protocol":"https:","slashes":true,"auth":null,"host":"login.microsoftonline.com","port":null,"hostname":"login.microsoftonline.com","hash":null,"search":null,"query":null,"pathname":"/botframework.com","path":"/botframework.com","href":"https://login.microsoftonline.com/botframework.com"},"_validated":false,"_host":"login.microsoftonline.com","_tenant":"botframework.com","_authorizationEndpoint":null,"_tokenEndpoint":null,"_deviceCodeEndpoint":null,"_isAdfsAuthority":false,"aadApiVersion":"1.5"},"_oauth2client":null,"_correlationId":null,"_callContext":{"options":{}},"_cache":{"_entries":[]},"_tokenRequestWithUserCode":{}},"_oAuthScope":"https://api.botframework.com","tokenCacheKey":"c52ee95f-973d-41fd-bb78-27c75a2b1be4https://api.botframework.com-cache","appPassword":"~2dLk-CJtB09a9E.8sE_.Tx.Scm.LB-6J4"},"credentialsProvider":{"appId":"c52ee95f-973d-41fd-bb78-27c75a2b1be4","appPassword":"~2dLk-CJtB09a9E.8sE_.Tx.Scm.LB-6J4"},"isEmulatingOAuthCards":false,"authConfiguration":{"requiredEndorsements":[]}},"_activity":{"text":"help","textFormat":"plain","type":"message","timestamp":"2021-04-23T10:27:58.575Z","localTimestamp":"2021-04-23T10:27:58.575Z","id":"1619173678555","channelId":"msteams","serviceUrl":"https://smba.trafficmanager.net/apac/","from":{"id":"29:1f2lyw-FGvjq0sx4fIWrlyvcHLro1ZfGZq4fmu0l9cJcgvWHn-7D_JLomX8k7OXjPhY924xB8cVVlVMPNFonTmg","name":"Holly Xie","aadObjectId":"975bf953-08aa-4a92-82f9-3e7ee31bdf32"},"conversation":{"conversationType":"personal","tenantId":"d137f805-5cc7-4587-b61b-77989483a8a4","id":"a:1lX9QFPvasppDbDEEeoF23u21gVv462i7RNdeBieoWVLpLLprZiox7274yVMq-PkX3HQkzQBv6ZG8jNg6mIHLye1JWcA_RaQ46chX-Rk8JdyVXz_8Wzet4WlQV41T4azo"},"recipient":{"id":"28:c52ee95f-973d-41fd-bb78-27c75a2b1be4","name":"bnzInstallerBF"},"entities":[{"locale":"en-US","country":"US","platform":"Mac","timezone":"Asia/Shanghai","type":"clientInfo"}],"channelData":{"tenant":{"id":"d137f805-5cc7-4587-b61b-77989483a8a4"}},"locale":"en-US","localTimezone":"Asia/Shanghai","rawTimestamp":"2021-04-23T10:27:58.5755942Z","rawLocalTimestamp":"2021-04-23T18:27:58.5755942+08:00","callerId":"urn:botframework:azure"}}
             const chatContextData: IChatContextData = {
-                'payload': {
-                    'type': IPayloadType.MESSAGE,
-                    'data': `${mentionedBotName} ${context.activity.text}`,
+                payload: {
+                    type: IPayloadType.MESSAGE,
+                    data: `${mentionedBotName} ${context.activity.text}`,
                 },
-                'context': {
-                    'chatting': {
-                        'bot': this.bot,
-                        'type': chattingType,
-                        'user': {
-                            'id': user.id,
-                            'name': user.name,
-                            'email': user.email,
+                context: {
+                    chatting: {
+                        bot: this.bot,
+                        type: chattingType,
+                        user: {
+                            id: user.id,
+                            name: user.name,
+                            email: user.email,
                         },
-                        'channel': {
-                            'id': (context.activity.channelData.channel ? context.activity.channelData.channel.id : ''),
-                            'name': '',
+                        channel: {
+                            id: context.activity.channelData.channel
+                                ? context.activity.channelData.channel.id
+                                : '',
+                            name: '',
                         },
-                        'team': {
-                            'id': (context.activity.channelData.team ? context.activity.channelData.team.id : ''),
-                            'name': '',
+                        team: {
+                            id: context.activity.channelData.team
+                                ? context.activity.channelData.team.id
+                                : '',
+                            name: '',
                         },
-                        'tenant': {
-                            'id': context.activity.channelData.tenant.id,
-                            'name': '',
+                        tenant: {
+                            id: context.activity.channelData.tenant.id,
+                            name: '',
                         },
                     },
-                    'chatTool': {
-                        'context': context,
+                    chatTool: {
+                        context: context,
                     },
                 },
             };
-            logger.debug(`Chat context data sent to chat bot: ${Util.dumpObject(chatContextData, 2)}`);
+            logger.debug(
+                `Chat context data sent to chat bot: ${Util.dumpObject(
+                    chatContextData,
+                    2
+                )}`
+            );
 
             // Only value field can be used to check where the message come from: mouse clicking or user input
             // Reference: https://blog.botframework.com/2019/07/02/using-adaptive-cards-with-the-microsoft-bot-framework/
@@ -281,20 +348,28 @@ export class BotActivityHandler extends TeamsActivityHandler {
             //     "callerId": "urn:botframework:azure"
             //     }
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            if (context.activity.value !== undefined && context.activity.text === undefined) { // From mouse clicking
+            if (
+                context.activity.value !== undefined &&
+                context.activity.text === undefined
+            ) {
+                // From mouse clicking
                 // Get  event
                 const event: IEvent = {
-                    'pluginId': context.activity.value.pluginId,
-                    'action': {
-                        'id': context.activity.value.action.id,
-                        'type': IActionType.BUTTON_CLICK,
-                        'token': context.activity.value.action.token,
+                    pluginId: context.activity.value.pluginId,
+                    action: {
+                        id: context.activity.value.action.id,
+                        type: IActionType.BUTTON_CLICK,
+                        token: context.activity.value.action.token,
                     },
                 };
                 if (context.activity.value.action.type !== undefined) {
                     event.action.type = context.activity.value.action.type;
                 } else {
-                    if (context.activity.value.action.id.startsWith('DIALOG_OPEN_')) {
+                    if (
+                        context.activity.value.action.id.startsWith(
+                            'DIALOG_OPEN_'
+                        )
+                    ) {
                         event.action.type = IActionType.DIALOG_OPEN;
                     } else {
                         event.action.type = IActionType.BUTTON_CLICK;
@@ -306,19 +381,21 @@ export class BotActivityHandler extends TeamsActivityHandler {
                 chatContextData.payload.data = event;
 
                 // Get router
-                const router = <MsteamsRouter> this.bot.geRouter();
+                const router = <MsteamsRouter>this.bot.geRouter();
 
                 // Call route handler for mouse navigation
                 await router.getRoute().handler(chatContextData);
-            } else { // From user input
+            } else {
+                // From user input
                 // Get listeners
-                const listeners = <MsteamsListener[]> this.bot.getListeners();
+                const listeners = <MsteamsListener[]>this.bot.getListeners();
 
                 // Match and process message
                 for (const listener of listeners) {
                     const matchers = listener.getMessageMatcher().getMatchers();
                     for (const matcher of matchers) {
-                        const matched: boolean = matcher.matcher(chatContextData);
+                        const matched: boolean =
+                            matcher.matcher(chatContextData);
                         if (matched) {
                             // Call message handler to process message
                             for (const handler of matcher.handlers) {
@@ -340,20 +417,30 @@ export class BotActivityHandler extends TeamsActivityHandler {
     }
 
     // Update conversation
-    async updateConversation(context: TurnContext, next: NextFunction): Promise<void> {
+    async updateConversation(
+        context: TurnContext,
+        next: NextFunction
+    ): Promise<void> {
         // Print start log
         logger.start(this.updateConversation, this);
 
         try {
             // Get conversation reference
-            const conversationReference = TurnContext.getConversationReference(context.activity);
+            const conversationReference = TurnContext.getConversationReference(
+                context.activity
+            );
 
             // Cache service URL
-            this.cacheServiceUrl(conversationReference.channelId, conversationReference.serviceUrl);
+            this.cacheServiceUrl(
+                conversationReference.channelId,
+                conversationReference.serviceUrl
+            );
 
             // Cache channel info
             this.channels = await TeamsInfo.getTeamChannels(context);
-            logger.debug(`Channel info: ${JSON.stringify(this.channels, null, 2)}`);
+            logger.debug(
+                `Channel info: ${JSON.stringify(this.channels, null, 2)}`
+            );
 
             await next();
         } catch (err) {
@@ -376,91 +463,125 @@ export class BotActivityHandler extends TeamsActivityHandler {
         } else {
             this.serviceUrl.set(id, serviceUrl);
         }
-        logger.debug(`MS Teams cached service URLs:`);
-        this.serviceUrl.forEach((value, key)=>(logger.debug(`${key} : ${value}`)));
+        logger.debug('MS Teams cached service URLs:');
+        this.serviceUrl.forEach((value, key) =>
+            logger.debug(`${key} : ${value}`)
+        );
 
         return;
     }
 
     // Implement the handleTeamsTaskModuleFetch function to handle 'task/fetch'
-    async handleTeamsTaskModuleFetch(context: TurnContext, taskModuleRequest: TaskModuleRequest): Promise<TaskModuleResponse> {
+    async handleTeamsTaskModuleFetch(
+        context: TurnContext,
+        taskModuleRequest: TaskModuleRequest
+    ): Promise<TaskModuleResponse> {
         // Print start log
         logger.start(this.handleTeamsTaskModuleFetch, this);
 
         try {
             // Called when the user selects an options from the displayed HeroCard or
             // AdaptiveCard.  The result is the action(task module) to perform.
-            logger.debug(`MS Teams task/fetch event context: ${JSON.stringify(context, null, 2)}`);
+            logger.debug(
+                `MS Teams task/fetch event context: ${JSON.stringify(
+                    context,
+                    null,
+                    2
+                )}`
+            );
 
             // Search the user from cached users.
             let user = this.getUser(context.activity.from.id);
             // if user have not been cached, then search from the msteams server and cache it
-            if (user === undefined ) {
-                const userProfile = await TeamsInfo.getMember(context, context.activity.from.id);
-                logger.debug(`Cache the user info: ${JSON.stringify(userProfile, null, 2)}`);
-                user = { id: context.activity.from.id, name: context.activity.from.name, email: userProfile.email };
+            if (user === undefined) {
+                const userProfile = await TeamsInfo.getMember(
+                    context,
+                    context.activity.from.id
+                );
+                logger.debug(
+                    `Cache the user info: ${JSON.stringify(
+                        userProfile,
+                        null,
+                        2
+                    )}`
+                );
+                user = {
+                    id: context.activity.from.id,
+                    name: context.activity.from.name,
+                    email: userProfile.email,
+                };
                 this.addUser(context.activity.from.id, user);
             }
 
             // Get chatting type
-            const chattingType = this.getChattingType(context.activity.conversation.conversationType);
+            const chattingType = this.getChattingType(
+                context.activity.conversation.conversationType
+            );
             logger.debug(`chattingType: ${chattingType}`);
 
             // Get  event
             const event: IEvent = {
-                'pluginId': context.activity.value.data.pluginId,
-                'action': {
-                    'id': context.activity.value.data.action.id,
-                    'type': IActionType.DIALOG_OPEN,
-                    'token': context.activity.value.data.action.token,
+                pluginId: context.activity.value.data.pluginId,
+                action: {
+                    id: context.activity.value.data.action.id,
+                    type: IActionType.DIALOG_OPEN,
+                    token: context.activity.value.data.action.token,
                 },
             };
 
             // Create chat context data
             const chatContextData: IChatContextData = {
-                'payload': {
-                    'type': IPayloadType.EVENT,
-                    'data': event,
+                payload: {
+                    type: IPayloadType.EVENT,
+                    data: event,
                 },
-                'context': {
-                    'chatting': {
-                        'bot': this.bot,
-                        'type': chattingType,
-                        'user': {
-                            'id': user.id,
-                            'name': user.name,
-                            'email': user.email,
+                context: {
+                    chatting: {
+                        bot: this.bot,
+                        type: chattingType,
+                        user: {
+                            id: user.id,
+                            name: user.name,
+                            email: user.email,
                         },
-                        'channel': {
-                            'id': (context.activity.channelData.channel ? context.activity.channelData.channel.id : ''),
-                            'name': '',
+                        channel: {
+                            id: context.activity.channelData.channel
+                                ? context.activity.channelData.channel.id
+                                : '',
+                            name: '',
                         },
-                        'team': {
-                            'id': (context.activity.channelData.team ? context.activity.channelData.team.id : ''),
-                            'name': '',
+                        team: {
+                            id: context.activity.channelData.team
+                                ? context.activity.channelData.team.id
+                                : '',
+                            name: '',
                         },
-                        'tenant': {
-                            'id': context.activity.channelData.tenant.id,
-                            'name': '',
+                        tenant: {
+                            id: context.activity.channelData.tenant.id,
+                            name: '',
                         },
                     },
-                    'chatTool': {
-                        'actionType': 'taskFetch',
-                        'context': context,
-                        'data': taskModuleRequest.data,
+                    chatTool: {
+                        actionType: 'taskFetch',
+                        context: context,
+                        data: taskModuleRequest.data,
                     },
                 },
             };
 
             // Get router
-            const router = <MsteamsRouter> this.bot.geRouter();
+            const router = <MsteamsRouter>this.bot.geRouter();
             // Call route handler for mouse navigation
-            const chatOpsTaskInfo: TaskModuleTaskInfo = <TaskModuleTaskInfo> await router.getRoute().handler(chatContextData);
+            const chatOpsTaskInfo: TaskModuleTaskInfo = <TaskModuleTaskInfo>(
+                await router.getRoute().handler(chatContextData)
+            );
 
             // The adaptive card doesn't adapt the theme mode of the MS Teams, and sometimes the display is not good
             // https://techcommunity.microsoft.com/t5/teams-developer/ms-teams-dark-mode-task-with-adaptive-card-wrong-colors/m-p/2837861#M4032
             if (chatOpsTaskInfo.card !== undefined) {
-                chatOpsTaskInfo.card = CardFactory.adaptiveCard(chatOpsTaskInfo.card);
+                chatOpsTaskInfo.card = CardFactory.adaptiveCard(
+                    chatOpsTaskInfo.card
+                );
             }
 
             return {
@@ -479,76 +600,106 @@ export class BotActivityHandler extends TeamsActivityHandler {
     }
 
     // Implement the handleTeamsTaskModuleFetch function to handle 'task/submit'
-    async handleTeamsTaskModuleSubmit(context: TurnContext, taskModuleRequest: TaskModuleRequest): Promise<TaskModuleResponse> {
+    async handleTeamsTaskModuleSubmit(
+        context: TurnContext,
+        taskModuleRequest: TaskModuleRequest
+    ): Promise<TaskModuleResponse> {
         // Called when data is being returned from the selected option (see `handleTeamsTaskModuleFetch').
         logger.start(this.handleTeamsTaskModuleSubmit, this);
 
         try {
-            logger.debug(`MS Teams task/submit event context: ${JSON.stringify(context, null, 2)}`);
+            logger.debug(
+                `MS Teams task/submit event context: ${JSON.stringify(
+                    context,
+                    null,
+                    2
+                )}`
+            );
 
             // Search the user from cached users.
             let user = this.getUser(context.activity.from.id);
             // if user have not been cached, then search from the msteams server and cache it
-            if (user === undefined ) {
-                const userProfile = await TeamsInfo.getMember(context, context.activity.from.id);
-                logger.debug(`Cache the user info: ${JSON.stringify(userProfile, null, 2)}`);
-                user = { id: context.activity.from.id, name: context.activity.from.name, email: userProfile.email };
+            if (user === undefined) {
+                const userProfile = await TeamsInfo.getMember(
+                    context,
+                    context.activity.from.id
+                );
+                logger.debug(
+                    `Cache the user info: ${JSON.stringify(
+                        userProfile,
+                        null,
+                        2
+                    )}`
+                );
+                user = {
+                    id: context.activity.from.id,
+                    name: context.activity.from.name,
+                    email: userProfile.email,
+                };
                 this.addUser(context.activity.from.id, user);
             }
 
             // Get chatting type
-            const chattingType = this.getChattingType(context.activity.conversation.conversationType);
+            const chattingType = this.getChattingType(
+                context.activity.conversation.conversationType
+            );
             logger.debug(`chattingType: ${chattingType}`);
 
             // Get  event
             const event: IEvent = {
-                'pluginId': context.activity.value.data.pluginId,
-                'action': {
-                    'id': context.activity.value.data.actionId,
-                    'type': IActionType.DIALOG_SUBMIT,
-                    'token': context.activity.value.data.token,
+                pluginId: context.activity.value.data.pluginId,
+                action: {
+                    id: context.activity.value.data.actionId,
+                    type: IActionType.DIALOG_SUBMIT,
+                    token: context.activity.value.data.token,
                 },
             };
 
             const chatContextData: IChatContextData = {
-                'payload': {
-                    'type': IPayloadType.EVENT,
-                    'data': event,
+                payload: {
+                    type: IPayloadType.EVENT,
+                    data: event,
                 },
-                'context': {
-                    'chatting': {
-                        'bot': this.bot,
-                        'type': chattingType,
-                        'user': {
-                            'id': user.id,
-                            'name': user.name,
-                            'email': user.email,
+                context: {
+                    chatting: {
+                        bot: this.bot,
+                        type: chattingType,
+                        user: {
+                            id: user.id,
+                            name: user.name,
+                            email: user.email,
                         },
-                        'channel': {
-                            'id': (context.activity.channelData.channel ? context.activity.channelData.channel.id : ''),
-                            'name': '',
+                        channel: {
+                            id: context.activity.channelData.channel
+                                ? context.activity.channelData.channel.id
+                                : '',
+                            name: '',
                         },
-                        'team': {
-                            'id': (context.activity.channelData.team ? context.activity.channelData.team.id : ''),
-                            'name': '',
+                        team: {
+                            id: context.activity.channelData.team
+                                ? context.activity.channelData.team.id
+                                : '',
+                            name: '',
                         },
-                        'tenant': {
-                            'id': context.activity.channelData.tenant.id,
-                            'name': '',
+                        tenant: {
+                            id: context.activity.channelData.tenant.id,
+                            name: '',
                         },
                     },
-                    'chatTool': {
-                        'actionType': 'taskSubmit',
-                        'context': context,
-                        'data': taskModuleRequest.data,
+                    chatTool: {
+                        actionType: 'taskSubmit',
+                        context: context,
+                        data: taskModuleRequest.data,
                     },
                 },
             };
 
             // Get router
-            const router = <MsteamsRouter> this.bot.geRouter();
+            const router = <MsteamsRouter>this.bot.geRouter();
             // Call router handler for mouse navigation
-            const taskInfo: TaskModuleTaskInfo = <TaskModuleTaskInfo> await router.getRoute().handler(chatContextData);
+            const taskInfo: TaskModuleTaskInfo = <TaskModuleTaskInfo>(
+                await router.getRoute().handler(chatContextData)
+            );
 
             if (taskInfo !== null && taskInfo !== undefined) {
                 return {
@@ -619,7 +770,7 @@ export class BotActivityHandler extends TeamsActivityHandler {
 
     // Add the user
     addUser(id: string, user: IUser): boolean {
-        let result: boolean = true;
+        let result = true;
         if (id === undefined || id.trim() === '') {
             result = false;
             return result;

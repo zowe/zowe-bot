@@ -1,19 +1,26 @@
 /*
-* This program and the accompanying materials are made available under the terms of the
-* Eclipse Public License v2.0 which accompanies this distribution, and is available at
-* https://www.eclipse.org/legal/epl-v20.html
-*
-* SPDX-License-Identifier: EPL-2.0
-*
-* Copyright Contributors to the Zowe Project.
-*/
+ * This program and the accompanying materials are made available under the terms of the
+ * Eclipse Public License v2.0 which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-v20.html
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Copyright Contributors to the Zowe Project.
+ */
 
-import { IUser, IRouteHandlerFunction, IChatContextData, IPayloadType, IEvent, IActionType } from '../../types';
-import type { Request, Response } from 'express';
-import { CommonBot } from '../../CommonBot';
-import { Router } from '../../Router';
-import { Logger } from '../../utils/Logger';
-import { MattermostMiddleware } from './MattermostMiddleware';
+import {
+    IUser,
+    IRouteHandlerFunction,
+    IChatContextData,
+    IPayloadType,
+    IEvent,
+    IActionType,
+} from '../../types';
+import type {Request, Response} from 'express';
+import {CommonBot} from '../../CommonBot';
+import {Router} from '../../Router';
+import {Logger} from '../../utils/Logger';
+import {MattermostMiddleware} from './MattermostMiddleware';
 
 const logger = Logger.getInstance();
 
@@ -43,7 +50,10 @@ export class MattermostRouter extends Router {
             const option = this.bot.getOption();
 
             // Set router
-            await option.messagingApp.app.post(this.router.path, this.processAction);
+            await option.messagingApp.app.post(
+                this.router.path,
+                this.processAction
+            );
         } catch (err) {
             // Print exception stack
             logger.error(logger.getErrorStack(new Error(err.name), err));
@@ -65,11 +75,11 @@ export class MattermostRouter extends Router {
 
             // Get  event
             const event: IEvent = {
-                'pluginId': '',
-                'action': {
-                    'id': '',
-                    'type': null,
-                    'token': '',
+                pluginId: '',
+                action: {
+                    id: '',
+                    type: null,
+                    token: '',
                 },
             };
             if (payload.type === 'dialog_submission') {
@@ -83,7 +93,9 @@ export class MattermostRouter extends Router {
                     event.action.id = segments[1];
                     event.action.token = segments[2];
                 } else {
-                    logger.error(`The data format of state is wrong!\n state=${payload.state}`);
+                    logger.error(
+                        `The data format of state is wrong!\n state=${payload.state}`
+                    );
                 }
                 event.action.type = IActionType.DIALOG_SUBMIT;
             } else {
@@ -101,7 +113,9 @@ export class MattermostRouter extends Router {
                     if (payload.context.action.type !== undefined) {
                         event.action.type = payload.context.action.type;
                     } else {
-                        if (payload.context.action.id.startsWith('DIALOG_OPEN_')) {
+                        if (
+                            payload.context.action.id.startsWith('DIALOG_OPEN_')
+                        ) {
                             event.action.type = IActionType.DIALOG_OPEN;
                         } else {
                             event.action.type = IActionType.BUTTON_CLICK;
@@ -109,22 +123,28 @@ export class MattermostRouter extends Router {
                     }
                 } else {
                     event.action.type = IActionType.UNSUPPORTED;
-                    logger.error(`Unsupported Mattermost interactive component: ${payload.type}`);
+                    logger.error(
+                        `Unsupported Mattermost interactive component: ${payload.type}`
+                    );
                 }
             }
 
-            let rootId: string = '';
-            if (payload.context !== undefined && payload.context.rootId !== undefined && payload.context.rootId !== '') {
+            let rootId = '';
+            if (
+                payload.context !== undefined &&
+                payload.context.rootId !== undefined &&
+                payload.context.rootId !== ''
+            ) {
                 rootId = payload.context.rootId;
             }
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const chatToolContext: Record<string, any> = {
-                'channelId': payload.channel_id,
-                'rootId': rootId,
-                'body': payload,
+                channelId: payload.channel_id,
+                rootId: rootId,
+                body: payload,
             };
 
-            const middleware = <MattermostMiddleware> this.bot.getMiddleware();
+            const middleware = <MattermostMiddleware>this.bot.getMiddleware();
             const user: IUser = await middleware.getUserById(payload.user_id);
             logger.debug(`user is ${JSON.stringify(user)}`);
 
@@ -132,33 +152,33 @@ export class MattermostRouter extends Router {
             logger.debug(`channel is ${JSON.stringify(channel)}`);
 
             const chatContextData: IChatContextData = {
-                'payload': {
-                    'type': IPayloadType.EVENT,
-                    'data': event,
+                payload: {
+                    type: IPayloadType.EVENT,
+                    data: event,
                 },
-                'context': {
-                    'chatting': {
-                        'bot': this.bot,
-                        'type': channel.chattingType,
-                        'user': {
-                            'id': payload.user_id,
-                            'name': user ? user.name : '',
-                            'email': user ? user.email : '',
+                context: {
+                    chatting: {
+                        bot: this.bot,
+                        type: channel.chattingType,
+                        user: {
+                            id: payload.user_id,
+                            name: user ? user.name : '',
+                            email: user ? user.email : '',
                         },
-                        'channel': {
-                            'id': payload.channel_id,
-                            'name': payload.channel_name,
+                        channel: {
+                            id: payload.channel_id,
+                            name: payload.channel_name,
                         },
-                        'team': {
-                            'id': payload.team_id,
-                            'name': payload.team_domain,
+                        team: {
+                            id: payload.team_id,
+                            name: payload.team_domain,
                         },
-                        'tenant': {
-                            'id': '',
-                            'name': '',
+                        tenant: {
+                            id: '',
+                            name: '',
                         },
                     },
-                    'chatTool': chatToolContext,
+                    chatTool: chatToolContext,
                 },
             };
 
