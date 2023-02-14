@@ -83,28 +83,30 @@ export class Logger {
         });
 
         // Create logger instance
-        this.logger = winston.createLogger( {
+        this.logger = winston.createLogger({
             level: this.option.level, // error: 0, warn: 1, info: 2, verbose: 3, debug: 4, silly: 5
             //   format: winston.format.combine(winston.format.timestamp(), winston.format.colorize(), winston.format.simple()),
-            transports: [new winston.transports.File({
-                filename: this.option.filePath,
-                maxsize: this.option.maximumSize,
-                maxFiles: this.option.maximumFile,
-                format: combine(timestamp(), format),
-                options: { flags: 'w' } }),
+            transports: [
+                new winston.transports.File({
+                    filename: this.option.filePath,
+                    maxsize: this.option.maximumSize,
+                    maxFiles: this.option.maximumFile,
+                    format: combine(timestamp(), format),
+                    options: { flags: 'w' },
+                }),
             ],
         });
 
         // Suppress console log output
         if (this.option.consoleSilent === false) {
-            this.logger.add( new winston.transports.Console({ format: combine(timestamp(), format) }));
+            this.logger.add(new winston.transports.Console({ format: combine(timestamp(), format) }));
         }
 
-        process.on("beforeExit", (code) => {
+        process.on('beforeExit', (code) => {
             this.logger.clear();
         });
 
-        process.on("exit", (code) => {
+        process.on('exit', (code) => {
             this.logger.end();
         });
 

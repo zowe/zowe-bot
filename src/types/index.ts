@@ -8,12 +8,12 @@
 * Copyright Contributors to the Zowe Project.
 */
 
+
 import type { Application } from 'express';
 import type { Receiver } from '@slack/bolt';
 import { CommonBot } from '../CommonBot';
 
 export { TaskModuleTaskInfo, Attachment } from 'botbuilder';
-
 
 /* eslint-disable no-unused-vars */
 export const enum IProtocol {
@@ -29,13 +29,13 @@ export const enum ILogLevel {
     INFO = 'info',
     VERBOSE = 'verbose',
     DEBUG = 'debug',
-    SILLY = 'silly'
+    SILLY = 'silly',
 }
 
 export const enum IChatToolType {
     MATTERMOST = 'mattermost',
     SLACK = 'slack',
-    MSTEAMS = 'msteams'
+    MSTEAMS = 'msteams',
 }
 
 export const enum IMessageType {
@@ -70,7 +70,7 @@ export const enum IActionType {
     DROPDOWN_SELECT = 'dropdown.select',
     DIALOG_OPEN = 'dialog.open',
     DIALOG_SUBMIT = 'dialog.submit',
-    UNSUPPORTED = 'unsupported'
+    UNSUPPORTED = 'unsupported',
 }
 
 export const enum IConnectionStatus {
@@ -97,14 +97,14 @@ export const enum IConnectionStatus {
 // }
 
 export interface IMessage {
-    type: IMessageType,
-    message: any, // eslint-disable-line @typescript-eslint/no-explicit-any
-    mentions?: Record<string, any>[], // eslint-disable-line @typescript-eslint/no-explicit-any
+    type: IMessageType;
+    message: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    mentions?: Record<string, any>[]; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 export interface IBotOption {
-    messagingApp: IMessagingApp,
-    chatTool: IChatTool
+    messagingApp: IMessagingApp;
+    chatTool: IChatTool;
 }
 
 export interface ILogOption {
@@ -116,25 +116,25 @@ export interface ILogOption {
 }
 
 export interface IAppOption extends IHttpEndpoint {
-    tlsKey: string,
-    tlsCert: string
+    tlsKey: string;
+    tlsCert: string;
 }
 
 export interface IHttpEndpoint {
-    protocol: IProtocol,
-    hostName: string,
-    port: number,
-    basePath: string
+    protocol: IProtocol;
+    hostName: string;
+    port: number;
+    basePath: string;
 }
 
 export interface IMessagingApp {
-    option: IAppOption,
-    app: Application
+    option: IAppOption;
+    app: Application;
 }
 
 export interface IChatTool {
-    type: IChatToolType,
-    option: IMattermostOption | ISlackOption | IMsteamsOption
+    type: IChatToolType;
+    option: IMattermostOption | ISlackOption | IMsteamsOption;
 }
 
 // # Mattermost Variable         Required  Description
@@ -152,28 +152,28 @@ export interface IChatTool {
 // # MATTERMOST_REPLY            No        (default: true) set to 'false' to stop posting reply responses as comments
 // # MATTERMOST_IGNORE_USERS     No        (default: empty) Enter a comma-separated list of 1
 export interface IMattermostOption {
-    protocol: IProtocol,
-    hostName: string,
-    port: number,
-    basePath: string,
-    tlsCertificate: string,
-    teamUrl: string,
-    botUserName: string,
-    botAccessToken: string,
+    protocol: IProtocol;
+    hostName: string;
+    port: number;
+    basePath: string;
+    tlsCertificate: string;
+    teamUrl: string;
+    botUserName: string;
+    botAccessToken: string;
     // integrationEndpoint: IHttpEndpoint,
 }
 
 // Option to create Slack chatbot
 // Doc: https://slack.dev/bolt-js/reference#initialization-options
 export interface ISlackOption {
-    botUserName: string,
+    botUserName: string;
 
     // A string from your app’s configuration (under “Basic Information”) which verifies that incoming events are coming from Slack
-    signingSecret: string,
+    signingSecret: string;
 
     // A string or object that specifies the endpoint(s) that the receiver will listen for incoming requests from Slack.
     // Required when your app connects and receives data from Slack via a HTTP endpoint connection.
-    endpoints: string | Record<string, any>, // eslint-disable-line @typescript-eslint/no-explicit-any
+    endpoints: string | Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
     // Determine whether events should be immediately acknowledged. Defaults to false.
     // processBeforeResponse: boolean,
@@ -193,12 +193,11 @@ export interface ISlackOption {
     // Array of scopes that your app will request within the OAuth process.
     // scopes: string[],
 
-        // Optional object that can be used to customize the default OAuth support. Read more in the OAuth documentation.
+    // Optional object that can be used to customize the default OAuth support. Read more in the OAuth documentation.
     // installerOptions: Record<string, any>,
 
-
     // An instance of Receiver that parses and handles incoming events.
-    receiver: Receiver,
+    receiver: Receiver;
 
     // Optional HTTP Agent used to set up proxy support.
     // agent: string,
@@ -211,7 +210,7 @@ export interface ISlackOption {
 
     // A string from your app’s configuration (under “Settings” > “Install App”) required for calling the Web API.
     // May not be passed when using authorize, orgAuthorize, or OAuth.
-    token: string,
+    token: string;
 
     // Can only be used when authorize is not defined. The optional botId is the ID for your bot token (ex: B12345) which can be used to ignore messages
     // sent by your app. If a xoxb- token is passed to your app, this value will automatically be retrieved by your app calling the auth.test method.
@@ -230,7 +229,7 @@ export interface ISlackOption {
 
     // control how much or what kind of information is logged
     // Supported values: DEBUG, INFO, WARN, and ERROR. By default, logLevel is set to INFO.
-    logLevel: string,
+    logLevel: string;
 
     // When set to true, the global error handler is passed an object with additional request context. Available from version 3.8.0, defaults to false
     // extendedErrorHandler: boolean,
@@ -243,57 +242,57 @@ export interface ISlackOption {
 
     // Enable Socket Mode to allow your app to connect and receive data from Slack via a WebSocket connection.
     // Defaults to false.
-    socketMode: boolean,
+    socketMode: boolean;
 
     // Activate the developer mode. Defaults to false.
     // developerMode: boolean,
 
     // Required when Socket Mode is enabled
     // Doc: https://slack.dev/bolt-js/concepts#socket-mode
-    appToken: string,
+    appToken: string;
 }
 
 // # MS Teams Variable           Required  Description
 // # BotId                       Yes       The ID of your MS Teams bot
 // # BotPassword                 Yes       The password of your MS Teams bot
 export interface IMsteamsOption {
-    botUserName: string,
-    botId: string,
-    botPassword: string,
+    botUserName: string;
+    botId: string;
+    botPassword: string;
     // messagingEndpoint: IHttpEndpoint,
 }
 
 export interface IMessageMatcherFunction {
-    (chatContextData: IChatContextData): boolean
+    (chatContextData: IChatContextData): boolean;
 }
 
 export interface IMessageHandlerFunction {
-    (chatContextData: IChatContextData): Promise<void>
+    (chatContextData: IChatContextData): Promise<void>;
 }
 
 export interface IMessageMatcher {
-    matcher: IMessageMatcherFunction,
-    handlers: IMessageHandlerFunction[]
+    matcher: IMessageMatcherFunction;
+    handlers: IMessageHandlerFunction[];
 }
 
 export interface IMessageHandlerIndex {
-    matcherIndex: number,
-    handlerIndex: number
+    matcherIndex: number;
+    handlerIndex: number;
 }
 
 export interface IRoute {
-    path: string,
-    handler: IRouteHandlerFunction
+    path: string;
+    handler: IRouteHandlerFunction;
 }
 
 export interface IRouteHandlerFunction {
-    (chatContextData: IChatContextData): Promise<void | Record<string, any>> // eslint-disable-line @typescript-eslint/no-explicit-any
+    (chatContextData: IChatContextData): Promise<void | Record<string, any>>; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 export interface IUser {
-    id: string,
-    name: string,
-    email: string,
+    id: string;
+    name: string;
+    email: string;
 }
 
 // export interface IChatContextData {
@@ -336,7 +335,7 @@ export interface IChattingContext {
     tenant: IName;
 }
 
-export interface IEvent{
+export interface IEvent {
     pluginId: string;
     action: IAction;
 }
