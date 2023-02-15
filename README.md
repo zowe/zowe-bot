@@ -87,7 +87,7 @@ const botOption: IBotOption = {
             'hostName': '<Your host name>',
             'port': 443,
             'basePath': '/api/v4',
-            'tlsCertificate': fs.readFileSync('<The absolute file path of your Mattermost server TLS certificate>', 'utf8'),
+            'tlsCertificate': fs.readFileSync('<The absolute file path of your Mattermost server TLS certificate or empty for default ca>', 'utf8'),
             'teamUrl': '<Your team URL>',
             'botUserName': '<Your bot user name>',
             'botAccessToken': '<Your bot access token>',
