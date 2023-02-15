@@ -37,6 +37,21 @@ export class Middleware {
     }
   }
 
+  async sendDirectMessage(chatContextData: IChatContextData, messages: IMessage[]): Promise<void> {
+    // Print start log
+    logger.start(this.sendDirectMessage, this);
+
+    try {
+      logger.debug('sendDirectMessage in base middleware');
+    } catch (err) {
+      // Print exception stack
+      logger.error(logger.getErrorStack(new Error(err.name), err));
+    } finally {
+      // Print end log
+      logger.end(this.sendDirectMessage, this);
+    }
+  }
+
   // Send message back to channel
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async send(chatContextData: IChatContextData, messages: IMessage[]): Promise<void> {

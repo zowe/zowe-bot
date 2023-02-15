@@ -579,6 +579,51 @@ export class SlackMiddleware extends Middleware {
     return result;
   }
 
+  async sendDirectMessage(chatContextData: IChatContextData, messages: IMessage[]): Promise<void> {
+    // Print start log
+    logger.start(this.sendDirectMessage, this);
+    let channelId: string;
+    if (chatContextData.context.chatting.type === IChattingType.PERSONAL) {
+      channelId = chatContextData.context.chatting.channel.id;
+    } else {
+      const openResp = await this.app.client.conversations.open({
+        users: chatContextData.context.chatting.user.id,
+      });
+      if (openResp.ok) {
+        channelId = openResp.channel.id;
+      } else {
+        logger.error('Unable open a DM for user ' + chatContextData.context.chatting.user.name);
+        return;
+      }
+    }
+    try {
+      for (const msg of messages) {
+        logger.debug(`msg: ${JSON.stringify(msg, null, 2)}`);
+        if (msg.type === IMessageType.SLACK_VIEW_OPEN) {
+          await this.app.client.views.open({ ...msg.message });
+        } else if (msg.type === IMessageType.SLACK_VIEW_UPDATE) {
+          await this.app.client.views.update(msg.message);
+        } else if (msg.type === IMessageType.PLAIN_TEXT) {
+          await this.app.client.chat.postMessage({
+            channel: channelId,
+            text: msg.message,
+          });
+        } else {
+          if (msg.message.text === undefined || msg.message.text === null) {
+            msg.message.text = 'New message from Common bot';
+          }
+          await this.app.client.chat.postMessage({ channel: channelId, ...msg.message });
+        }
+      }
+    } catch (err) {
+      // Print exception stack
+      logger.error(logger.getErrorStack(new Error(err.name), err));
+    } finally {
+      // Print end log
+      logger.end(this.sendDirectMessage, this);
+    }
+  }
+
   // get channel by id
   async getChannelById(id: string, slackWebClient: WebClient): Promise<IChannel> {
     logger.start(this.getChannelById);

@@ -111,6 +111,169 @@ export class MsteamsMiddleware extends Middleware {
     }
   }
 
+  async sendDirectMessage(chatContextData: IChatContextData, messages: IMessage[]): Promise<void> {
+    logger.info('Send proactive message ...');
+    try {
+      // Check cached service URL
+      if (this.botActivityHandler.getServiceUrl().size === 0) {
+        logger.error(
+          `The cached MS Teams service URL is empty! ` +
+            `You must talk with your bot in your MS Teams client first to cache the service URL.`,
+        );
+        return;
+      }
+
+      // Get text and attachment part of the message to be sent
+      let textMessage = '';
+      const mentions: Record<string, any>[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
+      const attachments: Attachment[] = [];
+      for (const message of messages) {
+        if (message.type === IMessageType.PLAIN_TEXT) {
+          textMessage = `${textMessage}\n${message.message}`;
+        } else if (message.type === IMessageType.MSTEAMS_ADAPTIVE_CARD) {
+          attachments.push(CardFactory.adaptiveCard(message.message));
+        } else {
+          logger.error(`Unsupported type "${message.type}" for the message: ${JSON.stringify(message, null, 2)}`);
+          textMessage = `${textMessage}\n${JSON.stringify(message.message)}`;
+        }
+
+        // Find channel ID by name or name by ID and merge all mentioned channels
+        // Need to be enhance later to support sending all messages via single response or sending all message one by one via multiple messages
+        if (message.mentions !== undefined && message.mentions.length > 0) {
+          for (const mention of message.mentions) {
+            if (mention.mentioned.id.trim() === '' && mention.mentioned.name.trim() !== '') {
+              const channelInfo = this.botActivityHandler.findChannelByName(mention.mentioned.name);
+              logger.debug(`Channel info for mention ${mention.mentioned.name}: ${JSON.stringify(channelInfo, null, 2)}`);
+              if (channelInfo !== null) {
+                mention.mentioned.id = channelInfo.id;
+              }
+            } else {
+              const channelInfo = this.botActivityHandler.findChannelById(mention.mentioned.id);
+              logger.debug(`Channel info for mention ${mention.mentioned.name}: ${JSON.stringify(channelInfo, null, 2)}`);
+              if (channelInfo !== null) {
+                mention.mentioned.name = channelInfo.name;
+              }
+            }
+
+            // if both id and name are found then push to the mentions
+            if (mention.mentioned.id !== '' && mention.mentioned.name !== '') {
+              mentions.push(mention);
+            }
+          }
+
+          logger.debug(`message.mentions: ${JSON.stringify(message.mentions, null, 2)}`);
+        }
+      }
+
+      // Proactive message
+      logger.info('Send proactive message ...');
+
+      // Check cached service URL
+      if (this.botActivityHandler.getServiceUrl().size === 0) {
+        logger.error(
+          `The cached MS Teams service URL is empty! ` +
+            `You must talk with your bot in your MS Teams client first to cache the service URL.`,
+        );
+        return;
+      }
+
+      // Find channel
+      let channelInfo = null;
+      if (chatContextData.context.chatting.channel.id === '' && chatContextData.context.chatting.channel.name !== '') {
+        channelInfo = this.botActivityHandler.findChannelByName(chatContextData.context.chatting.channel.name);
+      } else {
+        channelInfo = this.botActivityHandler.findChannelById(chatContextData.context.chatting.channel.id);
+      }
+      logger.info(`Target channel info: ${JSON.stringify(channelInfo, null, 2)}`);
+      if (channelInfo == null) {
+        logger.error(
+          `The specified MS Teams channel does not exist!\n${JSON.stringify(chatContextData.context.chatting.channel, null, 2)}`,
+        );
+        return;
+      }
+
+      // Get service URL
+      const serviceUrl = this.botActivityHandler.findServiceUrl(channelInfo.id);
+      logger.info(`Service URL: ${serviceUrl}`);
+      if (serviceUrl === '') {
+        logger.error(`MS Teams service URL does not exist for the channel ${JSON.stringify(channelInfo, null, 2)}`);
+        return;
+      }
+
+      // Create connector client
+      const connectorClient = this.botFrameworkAdapter.createConnectorClient(serviceUrl);
+
+      // Create conversation
+      // If use MessageFactory.list other commands to bind textMessage and attachments
+      // Send proactive message will fail, more details please look at below
+      //  Reference:
+      //    how to @someone in MS Teams: https://docs.microsoft.com/en-us/microsoftteams/platform/bots/how-to/conversations/channel-and-group-conversations?tabs=typescript
+      let firstActivity: Partial<Activity> = null;
+      if (textMessage !== '') {
+        firstActivity = MessageFactory.text(textMessage);
+        firstActivity.entities = <Entity[]>mentions;
+      } else if (attachments.length > 0) {
+        firstActivity = MessageFactory.attachment(attachments[0]);
+        firstActivity.entities = <Entity[]>mentions;
+      }
+      logger.debug(`firstActivity: ${JSON.stringify(firstActivity, null, 2)}`);
+      const targetMember = {
+        id: chatContextData.context.chatting.user.id,
+        name: chatContextData.context.chatting.user.name,
+      };
+      const conversationParameters = <ConversationParameters>{
+        isGroup: false,
+        members: [targetMember],
+        activity: firstActivity,
+      };
+
+      // Send proactive message
+      // Note this function can't send multiple attachments
+      // Error message:
+      //  2021-04-29T13:07:06.805Z [ERROR] Error: Error
+      //  at MsteamsMiddleware.send (/opt/ibm/zchatops/node_modules/@zowe/commonbot/adapters/msteams/MsteamsMiddleware.js:136:47)
+      //  Error: Activity resulted into multiple skype activities
+      //  at new RestError (/opt/ibm/zchatops/node_modules/@azure/ms-rest-js/dist/msRest.node.js:1403:28)
+      //  at /opt/ibm/zchatops/node_modules/@azure/ms-rest-js/dist/msRest.node.js:2528:37
+      //  at processTicksAndRejections (internal/process/task_queues.js:97:5)
+      //  at async MsteamsMiddleware.send (/opt/ibm/zchatops/node_modules/@zowe/commonbot/adapters/msteams/MsteamsMiddleware.js:132:17)
+      //  at async ChatContext.send (/opt/ibm/zchatops/node_modules/@zowe/commonbot/ChatContext.js:17:13)
+      const conversationResourceResponse = await connectorClient.conversations.createConversation(conversationParameters);
+
+      // Create the rest not sended Activity
+      let restActivity: Partial<Activity> = null;
+      if (textMessage !== '' && attachments.length > 0) {
+        restActivity = { attachments: attachments };
+        restActivity.entities = <Entity[]>mentions;
+      } else if (textMessage === '' && attachments.length > 1) {
+        // Remove the first attachment since it's already been sended.
+        attachments.shift();
+        restActivity = { attachments: attachments };
+        restActivity.entities = <Entity[]>mentions;
+      }
+      logger.debug(`restActivity: ${JSON.stringify(restActivity, null, 2)}`);
+      // Create the conversationReference
+      const conversationReference = TurnContext.getConversationReference(firstActivity);
+      // Construct the conversationReference
+      conversationReference.conversation = <ConversationAccount>{
+        isGroup: true,
+        id: conversationResourceResponse.id,
+        conversationType: 'channel',
+      };
+      conversationReference.serviceUrl = serviceUrl;
+      // Send the rest activity
+      this.botFrameworkAdapter.continueConversation(conversationReference, async (turnContext) => {
+        await turnContext.sendActivity(restActivity);
+      });
+    } catch (err) {
+      // Print exception stack
+      logger.error(logger.getErrorStack(new Error(err.name), err));
+    } finally {
+      // Print end log
+      logger.end(this.send, this);
+    }
+  }
+
   // Send message back to MS Teams channel
   async send(chatContextData: IChatContextData, messages: IMessage[]): Promise<void> {
     // Print start log

@@ -79,6 +79,44 @@ export class MattermostMiddleware extends Middleware {
     }
   }
 
+  async sendDirectMessage(chatContextData: IChatContextData, messages: IMessage[]): Promise<void> {
+    logger.start(this.sendDirectMessage, this);
+
+    try {
+      logger.debug('Creating a dm chat channel');
+      const dmChannel = await this.client.createDmChannel(chatContextData.context.chatting.user);
+
+      // Get chat context data
+      logger.debug(`Chat tool data sent to Mattermost server: ${Util.dumpObject(chatContextData.context.chatTool, 2)}`);
+
+      for (const msg of messages) {
+        // Process view to open dialog.
+        if (msg.type === IMessageType.MATTERMOST_DIALOG_OPEN) {
+          await this.client.openDialog(msg.message);
+          break;
+        }
+
+        // Send message back to dm channel
+        if (chatContextData.context.chatTool !== null) {
+          // Conversation message
+          logger.info('Send conversation message ...');
+          this.client.sendMessage(msg.message, dmChannel.id, chatContextData.context.chatTool.rootId);
+        } else {
+          // Proactive message
+          logger.info('Send proactive message ...');
+
+          this.client.sendMessage(msg.message, dmChannel.id, '');
+        }
+      }
+    } catch (err) {
+      // Print exception stack
+      logger.error(logger.getErrorStack(new Error(err.name), err));
+    } finally {
+      // Print end log
+      logger.end(this.send, this);
+    }
+  }
+
   // Send message back to Mattermost channel
   async send(chatContextData: IChatContextData, messages: IMessage[]): Promise<void> {
     // Print start log
