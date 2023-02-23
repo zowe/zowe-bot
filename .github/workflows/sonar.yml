@@ -4,10 +4,11 @@ on:
   push:
     branches:
       - main
-      - user/markackert/sonar
   pull_request:
     branches:
       - "**"
+
+permissions: read-all
 
 jobs:
   sonar:
