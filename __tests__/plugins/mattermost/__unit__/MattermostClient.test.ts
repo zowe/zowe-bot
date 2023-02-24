@@ -42,8 +42,10 @@ describe('MM client unit', () => {
         } as IMattermostOption,
       );
 
-      const req = client.post('badurl');
-      test.validate(req, test.name);
+      const postReq = client.post('badurl');
+      test.validate(postReq, 'post_' + test.name);
+      const getReq = (client as any).buildGet('badurl');
+      test.validate(getReq, 'get_' + test.name);
     }
   });
 });
