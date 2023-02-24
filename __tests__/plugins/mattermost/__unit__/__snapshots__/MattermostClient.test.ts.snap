@@ -1,0 +1,31 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`MM client unit test empty, blank, or null tlsOptions: ca 0spaces 1`] = `
+"{"method":"POST","url":"badurl","headers":{"authorization":"BEARER undefined","accept":"application/json","content-type":"application/json"}}
+undefined"
+`;
+
+exports[`MM client unit test empty, blank, or null tlsOptions: ca 3spaces 1`] = `
+"{"method":"POST","url":"badurl","headers":{"authorization":"BEARER undefined","accept":"application/json","content-type":"application/json"}}
+undefined"
+`;
+
+exports[`MM client unit test empty, blank, or null tlsOptions: ca manySpaces 1`] = `
+"{"method":"POST","url":"badurl","headers":{"authorization":"BEARER undefined","accept":"application/json","content-type":"application/json"}}
+undefined"
+`;
+
+exports[`MM client unit test empty, blank, or null tlsOptions: ca null 1`] = `
+"{"method":"POST","url":"badurl","headers":{"authorization":"BEARER undefined","accept":"application/json","content-type":"application/json"}}
+undefined"
+`;
+
+exports[`MM client unit test empty, blank, or null tlsOptions: ca undefined 1`] = `
+"{"method":"POST","url":"badurl","headers":{"authorization":"BEARER undefined","accept":"application/json","content-type":"application/json"}}
+undefined"
+`;
+
+exports[`MM client unit test empty, blank, or null tlsOptions: realPath 1`] = `
+"{"method":"POST","url":"badurl","headers":{"authorization":"BEARER undefined","accept":"application/json","content-type":"application/json"}}
+/bad/path"
+`;
