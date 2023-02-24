@@ -511,11 +511,7 @@ export class MattermostClient {
         .set('Accept', 'application/json')
         .set('Content-Type', 'application/json');
 
-      if (
-        this.option.protocol === 'https' &&
-        this.option.tlsCertificate != undefined &&
-        this.option.tlsCertificate.trim().length > 0
-      ) {
+      if (this.option.protocol === 'https' && this.option.tlsCertificate != null && this.option.tlsCertificate.trim().length > 0) {
         agent.ca(this.option.tlsCertificate);
       }
 
@@ -541,11 +537,7 @@ export class MattermostClient {
         .set('Authorization', `BEARER ${this.option.botAccessToken}`)
         .set('Accept', 'application/json')
         .set('Content-Type', 'application/json');
-      if (
-        this.option.protocol === 'https' &&
-        this.option.tlsCertificate != undefined &&
-        this.option.tlsCertificate.trim().length > 0
-      ) {
+      if (this.option.protocol === 'https' && this.option.tlsCertificate != null && this.option.tlsCertificate.trim().length > 0) {
         request.ca(this.option.tlsCertificate);
       }
       const res = await request;
