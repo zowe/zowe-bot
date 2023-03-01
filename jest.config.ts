@@ -27,18 +27,12 @@ const config: Config = {
   ...commonProperties,
   coverageDirectory: '<rootDir>/__tests__/__results__/unit/coverage',
   coverageReporters: ['json', 'lcov', 'text', 'cobertura'],
-  globals: {
-    'ts-jest': {
-      disableSourceMapSupport: true,
-    },
-  },
   roots: ['<rootDir>'],
   setupFilesAfterEnv: ['./__tests__/beforeTests.ts'],
   testEnvironment: 'node',
-
   testResultsProcessor: 'jest-sonar-reporter',
   transform: {
-    '^.+\\.ts?$': 'ts-jest',
+    '^.+\\.ts?$': ['ts-jest', { disableSourceMapSupport: true }],
   },
 };
 
