@@ -13,15 +13,11 @@ import { MattermostClient } from '../../../../src/plugins/mattermost/MattermostC
 import { MattermostMiddleware } from '../../../../src/plugins/mattermost/MattermostMiddleware';
 import { IMattermostOption } from '../../../../src/types';
 
-describe('MM client unit', () => {
-  it('assert 1=1', async () => {
-    expect(1).toBe(1);
-  });
-
-  it('test empty, blank, or null tlsOptions', () => {
+describe('MMClient unit', () => {
+  it('empty, blank, or null tlsOptions', () => {
     const snapAgent = (agent: SuperAgentRequest, testName: string) => {
       // agent._ca tracks the loaded cert authority, and is not dumped as part of normal object
-      expect(JSON.stringify(agent) + '\n' + (agent as any)._ca).toMatchSnapshot(testName);
+      expect((agent as any)._ca).toMatchSnapshot(testName);
     };
 
     const tests: { name: string; ca: any; validate: (agent: SuperAgentRequest, testName: string) => void }[] = [
