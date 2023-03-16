@@ -32,7 +32,12 @@ const config: Config = {
   testEnvironment: 'node',
   testResultsProcessor: 'jest-sonar-reporter',
   transform: {
-    '^.+\\.ts?$': ['ts-jest', { disableSourceMapSupport: true }],
+    '^.+\\.ts?$': [
+      'ts-jest',
+      {
+        disableSourceMapSupport: true,
+      },
+    ],
   },
 };
 

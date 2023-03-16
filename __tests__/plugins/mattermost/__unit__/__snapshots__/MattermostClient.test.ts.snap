@@ -1,61 +1,25 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`MM client unit test empty, blank, or null tlsOptions: get_ca 0spaces 1`] = `
-"{"method":"GET","url":"badurl","headers":{"authorization":"BEARER undefined","accept":"application/json","content-type":"application/json"}}
-undefined"
-`;
+exports[`MMClient unit empty, blank, or null tlsOptions: get_ca 0spaces 1`] = `undefined`;
 
-exports[`MM client unit test empty, blank, or null tlsOptions: get_ca 3spaces 1`] = `
-"{"method":"GET","url":"badurl","headers":{"authorization":"BEARER undefined","accept":"application/json","content-type":"application/json"}}
-undefined"
-`;
+exports[`MMClient unit empty, blank, or null tlsOptions: get_ca 3spaces 1`] = `undefined`;
 
-exports[`MM client unit test empty, blank, or null tlsOptions: get_ca manySpaces 1`] = `
-"{"method":"GET","url":"badurl","headers":{"authorization":"BEARER undefined","accept":"application/json","content-type":"application/json"}}
-undefined"
-`;
+exports[`MMClient unit empty, blank, or null tlsOptions: get_ca manySpaces 1`] = `undefined`;
 
-exports[`MM client unit test empty, blank, or null tlsOptions: get_ca null 1`] = `
-"{"method":"GET","url":"badurl","headers":{"authorization":"BEARER undefined","accept":"application/json","content-type":"application/json"}}
-undefined"
-`;
+exports[`MMClient unit empty, blank, or null tlsOptions: get_ca null 1`] = `undefined`;
 
-exports[`MM client unit test empty, blank, or null tlsOptions: get_ca undefined 1`] = `
-"{"method":"GET","url":"badurl","headers":{"authorization":"BEARER undefined","accept":"application/json","content-type":"application/json"}}
-undefined"
-`;
+exports[`MMClient unit empty, blank, or null tlsOptions: get_ca undefined 1`] = `undefined`;
 
-exports[`MM client unit test empty, blank, or null tlsOptions: get_realPath 1`] = `
-"{"method":"GET","url":"badurl","headers":{"authorization":"BEARER undefined","accept":"application/json","content-type":"application/json"}}
-/bad/path"
-`;
+exports[`MMClient unit empty, blank, or null tlsOptions: get_realPath 1`] = `"/bad/path"`;
 
-exports[`MM client unit test empty, blank, or null tlsOptions: post_ca 0spaces 1`] = `
-"{"method":"POST","url":"badurl","headers":{"authorization":"BEARER undefined","accept":"application/json","content-type":"application/json"}}
-undefined"
-`;
+exports[`MMClient unit empty, blank, or null tlsOptions: post_ca 0spaces 1`] = `undefined`;
 
-exports[`MM client unit test empty, blank, or null tlsOptions: post_ca 3spaces 1`] = `
-"{"method":"POST","url":"badurl","headers":{"authorization":"BEARER undefined","accept":"application/json","content-type":"application/json"}}
-undefined"
-`;
+exports[`MMClient unit empty, blank, or null tlsOptions: post_ca 3spaces 1`] = `undefined`;
 
-exports[`MM client unit test empty, blank, or null tlsOptions: post_ca manySpaces 1`] = `
-"{"method":"POST","url":"badurl","headers":{"authorization":"BEARER undefined","accept":"application/json","content-type":"application/json"}}
-undefined"
-`;
+exports[`MMClient unit empty, blank, or null tlsOptions: post_ca manySpaces 1`] = `undefined`;
 
-exports[`MM client unit test empty, blank, or null tlsOptions: post_ca null 1`] = `
-"{"method":"POST","url":"badurl","headers":{"authorization":"BEARER undefined","accept":"application/json","content-type":"application/json"}}
-undefined"
-`;
+exports[`MMClient unit empty, blank, or null tlsOptions: post_ca null 1`] = `undefined`;
 
-exports[`MM client unit test empty, blank, or null tlsOptions: post_ca undefined 1`] = `
-"{"method":"POST","url":"badurl","headers":{"authorization":"BEARER undefined","accept":"application/json","content-type":"application/json"}}
-undefined"
-`;
+exports[`MMClient unit empty, blank, or null tlsOptions: post_ca undefined 1`] = `undefined`;
 
-exports[`MM client unit test empty, blank, or null tlsOptions: post_realPath 1`] = `
-"{"method":"POST","url":"badurl","headers":{"authorization":"BEARER undefined","accept":"application/json","content-type":"application/json"}}
-/bad/path"
-`;
+exports[`MMClient unit empty, blank, or null tlsOptions: post_realPath 1`] = `"/bad/path"`;
