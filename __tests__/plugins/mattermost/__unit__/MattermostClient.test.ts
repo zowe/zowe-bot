@@ -14,6 +14,7 @@ import { MattermostMiddleware } from '../../../../src/plugins/mattermost/Matterm
 import { IMattermostOption } from '../../../../src/types';
 
 describe('MMClient unit', () => {
+  // Expect the post and get reqs to succeed (no error) under various https+tlsCert combinations
   it('empty, blank, or null tlsOptions', () => {
     const snapAgent = (agent: SuperAgentRequest, testName: string) => {
       // agent._ca tracks the loaded cert authority, and is not dumped as part of normal object
