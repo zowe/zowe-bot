@@ -79,12 +79,16 @@ export class MattermostMiddleware extends Middleware {
     }
   }
 
-  async sendDirectMessage(chatContextData: IChatContextData, messages: IMessage[]): Promise<void> {
+  async sendDirectMessage(chatContextData: IChatContextData, messages: IMessage[]): Promise<boolean> {
     logger.start(this.sendDirectMessage, this);
 
     try {
       logger.debug('Creating a dm chat channel');
-      const dmChannel = await this.client.createDmChannel(chatContextData.context.chatting.user);
+      const dmChannel = await this.client.createDmChannel(chatContextData.context.chatting.user, this.botUser);
+
+      if (dmChannel == null) {
+        return false;
+      }
 
       // Get chat context data
       logger.debug(`Chat tool data sent to Mattermost server: ${Util.dumpObject(chatContextData.context.chatTool, 2)}`);
@@ -104,9 +108,9 @@ export class MattermostMiddleware extends Middleware {
         } else {
           // Proactive message
           logger.info('Send proactive message ...');
-
           this.client.sendMessage(msg.message, dmChannel.id, '');
         }
+        return true;
       }
     } catch (err) {
       // Print exception stack

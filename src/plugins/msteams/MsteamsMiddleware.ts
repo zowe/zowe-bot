@@ -97,10 +97,14 @@ export class MsteamsMiddleware extends Middleware {
 
       // Listen for incoming requests
       option.messagingApp.app.post(option.messagingApp.option.basePath, (req: Request, res: Response) => {
-        this.botFrameworkAdapter.processActivity(req, res, async (context) => {
-          // Process bot activity
-          await this.botActivityHandler.run(context);
-        });
+        this.botFrameworkAdapter
+          .processActivity(req, res, async (context) => {
+            // Process bot activity
+            await this.botActivityHandler.run(context);
+          })
+          .catch((error) => {
+            logger.error(logger.getErrorStack(new Error(error), error));
+          });
       });
     } catch (err) {
       // Print exception stack
@@ -111,7 +115,7 @@ export class MsteamsMiddleware extends Middleware {
     }
   }
 
-  async sendDirectMessage(chatContextData: IChatContextData, messages: IMessage[]): Promise<void> {
+  async sendDirectMessage(chatContextData: IChatContextData, messages: IMessage[]): Promise<boolean> {
     logger.info('Send proactive message ...');
     try {
       // Check cached service URL
@@ -174,30 +178,29 @@ export class MsteamsMiddleware extends Middleware {
           `The cached MS Teams service URL is empty! ` +
             `You must talk with your bot in your MS Teams client first to cache the service URL.`,
         );
-        return;
+        return false;
       }
 
-      // Find channel
+      // Find channel and get service URL
       let channelInfo = null;
+      let serviceUrl = null;
       if (chatContextData.context.chatting.channel.id === '' && chatContextData.context.chatting.channel.name !== '') {
         channelInfo = this.botActivityHandler.findChannelByName(chatContextData.context.chatting.channel.name);
       } else {
         channelInfo = this.botActivityHandler.findChannelById(chatContextData.context.chatting.channel.id);
       }
-      logger.info(`Target channel info: ${JSON.stringify(channelInfo, null, 2)}`);
+      logger.silly(`Source channel info: ${JSON.stringify(channelInfo, null, 2)}`);
       if (channelInfo == null) {
-        logger.error(
-          `The specified MS Teams channel does not exist!\n${JSON.stringify(chatContextData.context.chatting.channel, null, 2)}`,
-        );
-        return;
+        serviceUrl = chatContextData.context.chatTool.context._activity.serviceUrl;
+      } else {
+        serviceUrl = this.botActivityHandler.findServiceUrl(channelInfo.id);
       }
 
-      // Get service URL
-      const serviceUrl = this.botActivityHandler.findServiceUrl(channelInfo.id);
-      logger.info(`Service URL: ${serviceUrl}`);
-      if (serviceUrl === '') {
+      logger.silly(`Service URL: ${serviceUrl}`);
+
+      if (serviceUrl == null || serviceUrl === '') {
         logger.error(`MS Teams service URL does not exist for the channel ${JSON.stringify(channelInfo, null, 2)}`);
-        return;
+        return false;
       }
 
       // Create connector client
@@ -219,55 +222,36 @@ export class MsteamsMiddleware extends Middleware {
       logger.debug(`firstActivity: ${JSON.stringify(firstActivity, null, 2)}`);
       const targetMember = {
         id: chatContextData.context.chatting.user.id,
-        name: chatContextData.context.chatting.user.name,
       };
       const conversationParameters = <ConversationParameters>{
         isGroup: false,
         members: [targetMember],
-        activity: firstActivity,
+        bot: chatContextData.context.chatTool.context._activity.recipient,
+        channelData: {
+          tenant: {
+            id: chatContextData.context.chatting.tenant.id,
+          },
+        },
       };
 
       // Send proactive message
       // Note this function can't send multiple attachments
-      // Error message:
-      //  2021-04-29T13:07:06.805Z [ERROR] Error: Error
-      //  at MsteamsMiddleware.send (/opt/ibm/zchatops/node_modules/@zowe/commonbot/adapters/msteams/MsteamsMiddleware.js:136:47)
-      //  Error: Activity resulted into multiple skype activities
-      //  at new RestError (/opt/ibm/zchatops/node_modules/@azure/ms-rest-js/dist/msRest.node.js:1403:28)
-      //  at /opt/ibm/zchatops/node_modules/@azure/ms-rest-js/dist/msRest.node.js:2528:37
-      //  at processTicksAndRejections (internal/process/task_queues.js:97:5)
-      //  at async MsteamsMiddleware.send (/opt/ibm/zchatops/node_modules/@zowe/commonbot/adapters/msteams/MsteamsMiddleware.js:132:17)
-      //  at async ChatContext.send (/opt/ibm/zchatops/node_modules/@zowe/commonbot/ChatContext.js:17:13)
       const conversationResourceResponse = await connectorClient.conversations.createConversation(conversationParameters);
 
-      // Create the rest not sended Activity
-      let restActivity: Partial<Activity> = null;
-      if (textMessage !== '' && attachments.length > 0) {
-        restActivity = { attachments: attachments };
-        restActivity.entities = <Entity[]>mentions;
-      } else if (textMessage === '' && attachments.length > 1) {
-        // Remove the first attachment since it's already been sended.
-        attachments.shift();
-        restActivity = { attachments: attachments };
-        restActivity.entities = <Entity[]>mentions;
-      }
-      logger.debug(`restActivity: ${JSON.stringify(restActivity, null, 2)}`);
-      // Create the conversationReference
-      const conversationReference = TurnContext.getConversationReference(firstActivity);
-      // Construct the conversationReference
-      conversationReference.conversation = <ConversationAccount>{
-        isGroup: true,
-        id: conversationResourceResponse.id,
-        conversationType: 'channel',
+      logger.silly(`Conversation Response: ${Util.dumpObject(conversationResourceResponse)}`);
+
+      const dmContext: Partial<Activity> = {
+        ...firstActivity,
       };
-      conversationReference.serviceUrl = serviceUrl;
-      // Send the rest activity
-      this.botFrameworkAdapter.continueConversation(conversationReference, async (turnContext) => {
-        await turnContext.sendActivity(restActivity);
-      });
+      dmContext.id = conversationResourceResponse.id;
+
+      await connectorClient.conversations.sendToConversation(conversationResourceResponse.id, dmContext);
+
+      return true;
     } catch (err) {
       // Print exception stack
       logger.error(logger.getErrorStack(new Error(err.name), err));
+      return false;
     } finally {
       // Print end log
       logger.end(this.send, this);

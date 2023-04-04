@@ -136,5 +136,12 @@ module.exports = {
         sourceType: 'module',
       },
     },
+    {
+      files: [' *.test.ts', '*.test.tsx', 'gulpfile.js', 'jest.config.ts'],
+      rules: {
+        'node/no-unpublished-import': 'off',
+        '@typescript-eslint/ban-ts-comment': 'warn',
+      },
+    },
   ],
 };

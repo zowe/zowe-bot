@@ -1,8 +1,8 @@
 {
   "name": "@zowe/bot",
-  "version": "1.0.0",
-  "description": "IBM Common Bot Framework",
-  "author": "IBM",
+  "version": "1.0.1",
+  "description": "Zowe Common Bot Framework",
+  "author": "Zowe",
   "license": "EPL-2.0",
   "private": true,
   "type": "commonjs",
@@ -73,5 +73,8 @@
   },
   "jestSonar": {
     "reportPath": "__tests__/__results__/jest-sonar"
+  },
+  "engines": {
+    "node": "^16.0.0"
   }
 }

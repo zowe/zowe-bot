@@ -8,7 +8,6 @@
  * Copyright Contributors to the Zowe Project.
  */
 
-// eslint-disable-next-line node/no-unpublished-import
 import type { Config } from 'jest';
 import * as fs from 'fs-extra';
 
