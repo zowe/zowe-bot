@@ -11,7 +11,7 @@
 import { CommonBot } from '../../../../src/CommonBot';
 import { MattermostClient } from '../../../../src/plugins/mattermost/MattermostClient';
 import { MattermostMiddleware } from '../../../../src/plugins/mattermost/MattermostMiddleware';
-import { IBotOption, IChannel, IChattingType, IChatToolType, IMattermostOption, IMessageType } from '../../../../src/types';
+import { IBotOption, IChannel, IChattingType, IChatToolType, IMattermostOption, IMessageType, IUser } from '../../../../src/types';
 import { MockContexts } from '../../../common/MockContexts';
 
 describe('Middleware Tests', () => {
@@ -54,9 +54,9 @@ describe('Middleware Tests', () => {
     });
 
     (middleware as any).client = client;
-    await middleware.sendDirectMessage(ctx, [testMsg]);
 
-    expect(client.createDmChannel).toHaveBeenCalledWith(ctx.context.chatting.user);
+    await middleware.sendDirectMessage(ctx, [testMsg]);
+    expect(client.createDmChannel).toHaveBeenCalledWith(ctx.context.chatting.user, null);
     expect(client.sendMessage).toHaveBeenCalledWith(testMsg.message, testChanId.id, ctx.context.chatTool.rootId);
 
     // Case where CreateDm fails
@@ -69,7 +69,7 @@ describe('Middleware Tests', () => {
     });
 
     await middleware.sendDirectMessage(ctx, [testMsg]);
-    expect(client.createDmChannel).toHaveBeenCalledWith(ctx.context.chatting.user);
+    expect(client.createDmChannel).toHaveBeenCalledWith(ctx.context.chatting.user, null);
     expect(client.sendMessage).toHaveBeenCalledTimes(0);
   });
 });

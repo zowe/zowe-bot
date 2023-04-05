@@ -184,12 +184,12 @@ export class CommonBot {
   }
 
   // Send message to channel
-  async sendDirectMessage(chatContextData: IChatContextData, messages: IMessage[]): Promise<void> {
+  async sendDirectMessage(chatContextData: IChatContextData, messages: IMessage[]): Promise<boolean> {
     // Print start log
     logger.start(this.sendDirectMessage, this);
 
     try {
-      await this.middleware.sendDirectMessage(chatContextData, messages);
+      return await this.middleware.sendDirectMessage(chatContextData, messages);
     } catch (err) {
       // Print exception stack
       logger.error(logger.getErrorStack(new Error(err.name), err));
