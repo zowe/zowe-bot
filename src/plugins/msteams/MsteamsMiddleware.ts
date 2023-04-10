@@ -120,7 +120,7 @@ export class MsteamsMiddleware extends Middleware {
     if (msgData.textMessage !== '') {
       firstActivity = MessageFactory.text(msgData.textMessage);
       firstActivity.entities = <Entity[]>msgData.mentions;
-    } else if (msgData.attachments.length > 0) {
+    } else if (msgData.attachments != null && msgData.attachments.length > 0) {
       firstActivity = MessageFactory.attachment(msgData.attachments[0]);
       firstActivity.entities = <Entity[]>msgData.mentions;
     }

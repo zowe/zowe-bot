@@ -8,11 +8,11 @@
  * Copyright Contributors to the Zowe Project.
  */
 
-import { CommonBot } from '../../../../src/CommonBot';
 import { MattermostClient } from '../../../../src/plugins/mattermost/MattermostClient';
 import { MattermostMiddleware } from '../../../../src/plugins/mattermost/MattermostMiddleware';
-import { IBotOption, IChannel, IChattingType, IChatToolType, IMattermostOption, IMessageType, IUser } from '../../../../src/types';
-import { MockContexts } from '../../../common/MockContexts';
+import { IChannel, IChattingType, IMattermostOption, IMessageType } from '../../../../src/types';
+import { MockCommonBot } from '../../../common/mocks/MockCommonBot';
+import { MockContexts } from '../../../common/mocks/MockContexts';
 
 describe('Middleware Tests', () => {
   it('Mattermost DirectMessage', async () => {
@@ -27,16 +27,7 @@ describe('Middleware Tests', () => {
       chattingType: IChattingType.PERSONAL,
     };
 
-    const mockBot: CommonBot = jest.createMockFromModule('../../../../src/CommonBot');
-    mockBot.getOption = () => {
-      return {
-        chatTool: {
-          type: IChatToolType.MATTERMOST,
-        },
-      } as IBotOption;
-    };
-
-    const middleware = new MattermostMiddleware(mockBot);
+    const middleware = new MattermostMiddleware(MockCommonBot.MATTERMOST_BOT);
     const client = new MattermostClient(middleware, {
       protocol: 'https',
       tlsCertificate: '',
