@@ -575,15 +575,12 @@ export class SlackMiddleware extends Middleware {
 
   // Add the user
   addUser(id: string, user: IUser): boolean {
-    let result = true;
     if (id === undefined || id.trim() === '') {
-      result = false;
-      return result;
+      return false;
     }
 
     this.users.set(id, user);
-    result = true;
-    return result;
+    return true;
   }
 
   async sendDirectMessage(chatContextData: IChatContextData, messages: IMessage[]): Promise<boolean> {
@@ -609,8 +606,14 @@ export class SlackMiddleware extends Middleware {
       for (const msg of messages) {
         logger.debug(`msg: ${JSON.stringify(msg, null, 2)}`);
         if (msg.type === IMessageType.SLACK_VIEW_OPEN) {
+          if (msg.message.channel != null) {
+            msg.message.channel = channelId;
+          }
           await this.app.client.views.open({ ...msg.message });
         } else if (msg.type === IMessageType.SLACK_VIEW_UPDATE) {
+          if (msg.message.channel != null) {
+            msg.message.channel = channelId;
+          }
           await this.app.client.views.update(msg.message);
         } else if (msg.type === IMessageType.PLAIN_TEXT) {
           await this.app.client.chat.postMessage({
@@ -621,10 +624,9 @@ export class SlackMiddleware extends Middleware {
           logger.info('No message send to commonbot, ignoring.');
           logger.debug(`Empty message: ${Util.dumpObject(msg)}`);
           // TODO: should this return false? Whats the expectation of someone calling api with an empty msg?
-          return true;
         }
-        return true;
       }
+      return true;
     } catch (err) {
       // Print exception stack
       logger.error(logger.getErrorStack(new Error(err.name), err));

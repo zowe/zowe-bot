@@ -45,6 +45,11 @@ export class MockCommonBot {
       return {
         chatTool: {
           type: IChatToolType.SLACK,
+          option: {
+            socketMode: true,
+            appToken: 'mock_apptoken',
+            token: 'mock_token',
+          },
         },
       } as IBotOption;
     };

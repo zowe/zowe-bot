@@ -8,7 +8,7 @@
  * Copyright Contributors to the Zowe Project.
  */
 
-import { Activity, Attachment, ChannelInfo } from 'botbuilder';
+import { Activity, Attachment } from 'botbuilder';
 import { BotActivityHandler } from '../../../../src/plugins/msteams/BotActivityHandler';
 import { MsteamsMiddleware } from '../../../../src/plugins/msteams/MsteamsMiddleware';
 import { IMessage, IMessageType } from '../../../../src/types';

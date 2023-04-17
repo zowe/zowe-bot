@@ -16,7 +16,7 @@ import { MockContexts } from '../../../common/mocks/MockContexts';
 
 describe('Middleware Tests', () => {
   it('Mattermost DirectMessage', async () => {
-    const ctx = MockContexts.SIMPLE_MM_CTX;
+    const ctx = MockContexts.MM_SIMPLE_CTX;
     const testMsg = {
       type: IMessageType.PLAIN_TEXT,
       message: 'Test DM',

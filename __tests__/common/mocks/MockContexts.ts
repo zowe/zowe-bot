@@ -40,7 +40,7 @@ export class MockContexts {
    * @param bot
    * @returns
    */
-  static SIMPLE_MM_CTX: IChatContextData = {
+  static MM_SIMPLE_CTX: IChatContextData = {
     payload: this.mockMsg,
     context: {
       chatting: this.publicChatting,
@@ -50,17 +50,35 @@ export class MockContexts {
     },
   };
 
-  static SIMPLE_SLACK_CTX: IChatContextData = {
+  static SLACK_SIMPLE_CTX: IChatContextData = {
     payload: this.mockMsg,
     context: {
       chatting: this.publicChatting,
       chatTool: {
         rootId: 'mock_root_id',
+        option: {
+          chatTool: {
+            socketMode: true,
+          },
+          socketMode: true,
+        },
       },
     },
   };
 
-  static SIMPLE_MSTEAMS_CTX: IChatContextData = {
+  static SLACK_PERSONAL_DM_CTX: IChatContextData = Object.assign(this.SLACK_SIMPLE_CTX, {
+    context: {
+      chatting: {
+        type: IChattingType.PERSONAL,
+        channel: {
+          id: 'mock_dm_id',
+          name: 'mock_dm_name',
+        },
+      },
+    },
+  });
+
+  static MSTEAMS_SIMPLE_CTX: IChatContextData = {
     payload: this.mockMsg,
     context: {
       chatting: this.publicChatting,
