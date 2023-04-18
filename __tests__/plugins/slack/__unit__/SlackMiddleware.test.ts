@@ -22,6 +22,10 @@ jest.spyOn(WebClient.prototype, 'apiCall').mockImplementation(() => {
   });
 });
 
+afterAll(() => {
+  jest.restoreAllMocks();
+});
+
 describe('Slack Middleware Tests', () => {
   const middlewareMock: {
     app: App;
