@@ -112,8 +112,6 @@ describe('Slack Middleware Tests', () => {
       ],
     ];
 
-    const ctx = MockContexts.SLACK_PERSONAL_DM_CTX;
-
     middlewareMock.app.client.chat.postMessage = jest.fn((args: any) => {
       return '' as any;
     });
@@ -124,13 +122,19 @@ describe('Slack Middleware Tests', () => {
       return '' as any;
     });
 
+    // run 3 tests against all cases:
+    // - peronal channel
+    // - public channel
+    // - public channel w/ failed api response from slack
     for (const test of testCases) {
-      const sent = await middlewareMock.sendDirectMessage(ctx, test);
+      const pCtx = MockContexts.SLACK_PERSONAL_DM_CTX;
+      const sCtx = MockContexts.SLACK_SIMPLE_CTX;
+      const sentP = await middlewareMock.sendDirectMessage(pCtx, test);
       const lastTest = test[test.length - 1];
       if (lastTest.type === IMessageType.PLAIN_TEXT) {
         expect(middlewareMock.app.client.chat.postMessage).toBeCalledTimes(test.length);
         expect(middlewareMock.app.client.chat.postMessage).lastCalledWith({
-          channel: ctx.context.chatting.channel.id,
+          channel: pCtx.context.chatting.channel.id,
           text: lastTest.message,
         });
       }
@@ -139,14 +143,69 @@ describe('Slack Middleware Tests', () => {
         expect(middlewareMock.app.client.views.open).toBeCalledTimes(test.length);
         expect(middlewareMock.app.client.views.open).lastCalledWith({
           ...lastTest.message,
-          channel: ctx.context.chatting.channel.id,
+          channel: pCtx.context.chatting.channel.id,
         });
       }
       if (lastTest.type === IMessageType.SLACK_VIEW_UPDATE) {
         expect(middlewareMock.app.client.views.update).toBeCalledTimes(test.length);
         expect(middlewareMock.app.client.views.update).lastCalledWith(lastTest.message);
       }
-      expect(sent).toBe(true);
+      expect(sentP).toBe(true);
+
+      jest.clearAllMocks();
+
+      middlewareMock.app.client.conversations.open = jest.fn(() => {
+        return new Promise((resolve) => {
+          resolve({
+            channel: {
+              id: sCtx.context.chatting.channel.id,
+            },
+            ok: true,
+          });
+        });
+      });
+
+      const sentS = await middlewareMock.sendDirectMessage(sCtx, test);
+      if (lastTest.type === IMessageType.PLAIN_TEXT) {
+        expect(middlewareMock.app.client.chat.postMessage).toBeCalledTimes(test.length);
+        expect(middlewareMock.app.client.chat.postMessage).lastCalledWith({
+          channel: sCtx.context.chatting.channel.id,
+          text: lastTest.message,
+        });
+      }
+      // message channel will be replaced with dm
+      if (lastTest.type === IMessageType.SLACK_VIEW_OPEN) {
+        expect(middlewareMock.app.client.views.open).toBeCalledTimes(test.length);
+        expect(middlewareMock.app.client.views.open).lastCalledWith({
+          ...lastTest.message,
+          channel: sCtx.context.chatting.channel.id,
+        });
+      }
+      if (lastTest.type === IMessageType.SLACK_VIEW_UPDATE) {
+        expect(middlewareMock.app.client.views.update).toBeCalledTimes(test.length);
+        expect(middlewareMock.app.client.views.update).lastCalledWith(lastTest.message);
+      }
+
+      expect(middlewareMock.app.client.conversations.open).toBeCalledTimes(1);
+      expect(middlewareMock.app.client.conversations.open).lastCalledWith({
+        users: sCtx.context.chatting.user.id,
+      });
+      expect(sentS).toBe(true);
+
+      jest.clearAllMocks();
+
+      middlewareMock.app.client.conversations.open = jest.fn(() => {
+        return new Promise((resolve) => {
+          resolve({
+            ok: false,
+          });
+        });
+      });
+
+      const sendF = await middlewareMock.sendDirectMessage(sCtx, test);
+      expect(sendF).toBe(false);
+
+      jest.clearAllMocks();
     }
   });
 });

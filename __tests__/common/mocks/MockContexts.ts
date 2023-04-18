@@ -66,7 +66,7 @@ export class MockContexts {
     },
   };
 
-  static SLACK_PERSONAL_DM_CTX: IChatContextData = Object.assign(this.SLACK_SIMPLE_CTX, {
+  static SLACK_PERSONAL_DM_CTX: IChatContextData = Object.assign({}, this.SLACK_SIMPLE_CTX, {
     context: {
       chatting: {
         type: IChattingType.PERSONAL,
