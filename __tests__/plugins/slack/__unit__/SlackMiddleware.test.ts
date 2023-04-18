@@ -13,6 +13,14 @@ import { IChatContextData, IMessage, IMessageType } from '../../../../src/types'
 import { MockCommonBot } from '../../../common/mocks/MockCommonBot';
 import { MockContexts } from '../../../common/mocks/MockContexts';
 import { App } from '@slack/bolt';
+import { WebClient } from '@slack/web-api';
+
+// disable outgoing API calls in unit test, which caused the tests to exit rc=1 despite passing
+jest.spyOn(WebClient.prototype, 'apiCall').mockImplementation(() => {
+  return new Promise((resolve) => {
+    resolve({} as any);
+  });
+});
 
 describe('Slack Middleware Tests', () => {
   const middlewareMock: {
