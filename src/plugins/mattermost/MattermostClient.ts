@@ -511,7 +511,7 @@ export class MattermostClient {
         .set('Accept', 'application/json')
         .set('Content-Type', 'application/json');
 
-      if (this.option.protocol === 'https') {
+      if (this.option.protocol === 'https' && this.option.tlsCertificate != null && this.option.tlsCertificate.trim().length > 0) {
         agent.ca(this.option.tlsCertificate);
       }
 
@@ -525,21 +525,26 @@ export class MattermostClient {
     }
   }
 
+  private buildGet(url: string): SuperAgentRequest {
+    logger.debug(`url is ${url}`);
+    const request = superagent
+      .get(url)
+      .set('Authorization', `BEARER ${this.option.botAccessToken}`)
+      .set('Accept', 'application/json')
+      .set('Content-Type', 'application/json');
+    if (this.option.protocol === 'https' && this.option.tlsCertificate != null && this.option.tlsCertificate.trim().length > 0) {
+      request.ca(this.option.tlsCertificate);
+    }
+    return request;
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async get(url: string): Promise<Record<string, any>> {
     logger.start(this.get, this);
 
     const res: Record<string, any> = {}; // eslint-disable-line @typescript-eslint/no-explicit-any
     try {
-      logger.debug(`url is ${url}`);
-      const request = superagent
-        .get(url)
-        .set('Authorization', `BEARER ${this.option.botAccessToken}`)
-        .set('Accept', 'application/json')
-        .set('Content-Type', 'application/json');
-      if (this.option.protocol === 'https') {
-        request.ca(this.option.tlsCertificate);
-      }
+      const request = this.buildGet(url);
       const res = await request;
       logger.debug(Util.dumpResponse(res));
       return res;
