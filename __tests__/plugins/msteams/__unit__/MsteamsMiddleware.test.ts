@@ -186,7 +186,7 @@ describe('MsTeams Middleware Tests', () => {
       }
     });
 
-    it('empty channel name and id', async () => {
+    it('empty channel name and id => findChannelById', async () => {
       // clone ctx, we'll be modifying it in test
       const ctx: IChatContextData = MockContexts.MSTEAMS_SIMPLE_CTX;
       ctx.context.chatting.channel.id = '';
@@ -197,17 +197,46 @@ describe('MsTeams Middleware Tests', () => {
       }
     });
 
+    it('condition findChannelByName', async () => {
+      const ctx: IChatContextData = MockContexts.MSTEAMS_SIMPLE_CTX;
+      ctx.context.chatting.channel.id = '';
+      ctx.context.chatting.channel.name = 'mock_name';
+
+      for (const test of testCases) {
+        const sent = await middlewareMock.sendDirectMessage(ctx, test);
+        expect(sent).toBe(true);
+      }
+      jest.spyOn(middlewareMock.botActivityHandler, 'findChannelByName').mockReturnValue({ id: null! });
+
+      for (const test of testCases) {
+        const sent = await middlewareMock.sendDirectMessage(ctx, test);
+        expect(sent).toBe(false);
+      }
+    });
+
     it('channel info returns empty', async () => {
       const ctx: IChatContextData = MockContexts.MSTEAMS_SIMPLE_CTX;
       jest.spyOn(middlewareMock.botActivityHandler, 'findChannelById').mockReturnValue(null!);
 
+      ctx.context.chatTool.context = null;
       for (const test of testCases) {
-        // clone ctx, we'll be modifying it in test
+        const sent = await middlewareMock.sendDirectMessage(ctx, test);
+        expect(sent).toBe(false);
+      }
+      ctx.context.chatTool.context = { _activity: null };
+      for (const test of testCases) {
+        const sent = await middlewareMock.sendDirectMessage(ctx, test);
+        expect(sent).toBe(false);
+      }
+      ctx.context.chatTool.context._activity = { serviceUrl: null };
+
+      for (const test of testCases) {
         const sent = await middlewareMock.sendDirectMessage(ctx, test);
         expect(sent).toBe(false);
       }
 
       ctx.context.chatTool.context._activity.serviceUrl = 'some_svc_url';
+      ctx.context.chatTool.context._activity.recipient = 'bot_id'; // incidentially nuked by nulling 'above' paths
 
       for (const test of testCases) {
         const sent = await middlewareMock.sendDirectMessage(ctx, test);
@@ -228,7 +257,13 @@ describe('MsTeams Middleware Tests', () => {
     it('empty msteams _activity.recipient', async () => {
       const ctx: IChatContextData = MockContexts.MSTEAMS_SIMPLE_CTX;
 
-      ctx.context.chatTool.context._activity = null;
+      ctx.context.chatTool.context = null;
+      for (const test of testCases) {
+        const sent = await middlewareMock.sendDirectMessage(ctx, test);
+        expect(sent).toBe(false);
+      }
+
+      ctx.context.chatTool.context = { _activity: null };
       for (const test of testCases) {
         const sent = await middlewareMock.sendDirectMessage(ctx, test);
         expect(sent).toBe(false);
