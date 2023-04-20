@@ -126,7 +126,10 @@ describe('MsTeams Middleware Tests', () => {
     }
   });
 
-  it('SendDirect message', async () => {
+  describe('SendDirectMessage', () => {
+    // context may be modified in tests, store and restore it
+    const origSimpleCtx = MockContexts.MSTEAMS_SIMPLE_CTX;
+
     const testCases: IMessage[][] = [
       [
         { type: IMessageType.PLAIN_TEXT, message: 'hi' },
@@ -141,23 +144,100 @@ describe('MsTeams Middleware Tests', () => {
       [{ type: IMessageType.MSTEAMS_DIALOG_OPEN, message: 'TODO: dialog open' }],
       [],
     ];
-    const mockConnector: ConnectorClient = { conversations: { createConversation: () => {}, sendToConversation: () => {} } } as any;
-    jest.spyOn(mockConnector.conversations, 'createConversation').mockImplementation(() => {
-      return { id: 'mock_convo_id' };
-    });
-    jest.spyOn(mockConnector.conversations, 'sendToConversation').mockReturnValue();
-    const mockMap = new Map<string, string>();
-    mockMap.set('abc', 'def');
-    jest.spyOn(middlewareMock.botActivityHandler, 'getServiceUrl').mockReturnValue(mockMap);
-    jest.spyOn(middlewareMock.botActivityHandler, 'findChannelByName').mockReturnValue({ id: 'mock_chan_id', name: 'mock_name' });
-    jest.spyOn(middlewareMock.botActivityHandler, 'findChannelById').mockReturnValue({ id: 'mock_chan_id', name: 'mock_name' });
-    jest.spyOn(middlewareMock.botActivityHandler, 'findServiceUrl').mockReturnValue('mock_svc_url');
-    jest.spyOn(middlewareMock.botFrameworkAdapter, 'createConnectorClient').mockReturnValue(mockConnector);
 
-    for (const test of testCases) {
-      const ctx = MockContexts.MSTEAMS_SIMPLE_CTX;
-      const sent = await middlewareMock.sendDirectMessage(ctx, test);
-      expect(sent).toBe(true);
-    }
+    beforeEach(() => {
+      MockContexts.MSTEAMS_SIMPLE_CTX = origSimpleCtx;
+      const mockConnector: ConnectorClient = { conversations: { createConversation: () => {}, sendToConversation: () => {} } } as any;
+      jest.spyOn(mockConnector.conversations, 'createConversation').mockImplementation(() => {
+        return { id: 'mock_convo_id' };
+      });
+      jest.spyOn(mockConnector.conversations, 'sendToConversation').mockReturnValue();
+      const mockMap = new Map<string, string>();
+      mockMap.set('abc', 'def');
+      jest.spyOn(middlewareMock.botActivityHandler, 'getServiceUrl').mockReturnValue(mockMap);
+      jest.spyOn(middlewareMock.botActivityHandler, 'findChannelByName').mockReturnValue({ id: 'mock_chan_id', name: 'mock_name' });
+      jest.spyOn(middlewareMock.botActivityHandler, 'findChannelById').mockReturnValue({ id: 'mock_chan_id', name: 'mock_name' });
+      jest.spyOn(middlewareMock.botActivityHandler, 'findServiceUrl').mockReturnValue('mock_svc_url');
+      jest.spyOn(middlewareMock.botFrameworkAdapter, 'createConnectorClient').mockReturnValue(mockConnector);
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    // by default, w/ beforeEach all cases are good.
+    it('Success cases', async () => {
+      for (const test of testCases) {
+        const ctx: IChatContextData = MockContexts.MSTEAMS_SIMPLE_CTX;
+        const sent = await middlewareMock.sendDirectMessage(ctx, test);
+        expect(sent).toBe(true);
+      }
+    });
+
+    // --------
+    // modify conditions to trigger various failures/branches below
+    // --------
+    it('getServiceUrl empty', async () => {
+      jest.spyOn(middlewareMock.botActivityHandler, 'getServiceUrl').mockReturnValue(new Map());
+      for (const test of testCases) {
+        const ctx: IChatContextData = MockContexts.MSTEAMS_SIMPLE_CTX;
+        const sent = await middlewareMock.sendDirectMessage(ctx, test);
+        expect(sent).toBe(false);
+      }
+    });
+
+    it('empty channel name and id', async () => {
+      // clone ctx, we'll be modifying it in test
+      const ctx: IChatContextData = MockContexts.MSTEAMS_SIMPLE_CTX;
+      ctx.context.chatting.channel.id = '';
+      ctx.context.chatting.channel.name = '';
+      for (const test of testCases) {
+        const sent = await middlewareMock.sendDirectMessage(ctx, test);
+        expect(sent).toBe(true);
+      }
+    });
+
+    it('channel info returns empty', async () => {
+      const ctx: IChatContextData = MockContexts.MSTEAMS_SIMPLE_CTX;
+      jest.spyOn(middlewareMock.botActivityHandler, 'findChannelById').mockReturnValue(null!);
+
+      for (const test of testCases) {
+        // clone ctx, we'll be modifying it in test
+        const sent = await middlewareMock.sendDirectMessage(ctx, test);
+        expect(sent).toBe(false);
+      }
+
+      ctx.context.chatTool.context._activity.serviceUrl = 'some_svc_url';
+
+      for (const test of testCases) {
+        const sent = await middlewareMock.sendDirectMessage(ctx, test);
+        expect(sent).toBe(true);
+      }
+    });
+
+    it('empty or null serviceUrl', async () => {
+      const ctx: IChatContextData = MockContexts.MSTEAMS_SIMPLE_CTX;
+      jest.spyOn(middlewareMock.botActivityHandler, 'findServiceUrl').mockReturnValue(null!);
+
+      for (const test of testCases) {
+        const sent = await middlewareMock.sendDirectMessage(ctx, test);
+        expect(sent).toBe(false);
+      }
+    });
+
+    it('empty msteams _activity.recipient', async () => {
+      const ctx: IChatContextData = MockContexts.MSTEAMS_SIMPLE_CTX;
+
+      ctx.context.chatTool.context._activity = null;
+      for (const test of testCases) {
+        const sent = await middlewareMock.sendDirectMessage(ctx, test);
+        expect(sent).toBe(false);
+      }
+      ctx.context.chatTool.context._activity = { recipient: null };
+      for (const test of testCases) {
+        const sent = await middlewareMock.sendDirectMessage(ctx, test);
+        expect(sent).toBe(false);
+      }
+    });
   });
 });

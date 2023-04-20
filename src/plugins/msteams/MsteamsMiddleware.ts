@@ -207,6 +207,10 @@ export class MsteamsMiddleware extends Middleware {
       }
       logger.silly(`Source channel info: ${JSON.stringify(channelInfo, null, 2)}`);
       if (channelInfo == null || channelInfo.id == null) {
+        if (chatContextData.context.chatTool?.context?._activity?.serviceUrl == null) {
+          logger.error(`Could not find channel info, and could not find serviceUrl because of it.`);
+          return false;
+        }
         serviceUrl = chatContextData.context.chatTool.context._activity.serviceUrl;
       } else {
         serviceUrl = this.botActivityHandler.findServiceUrl(channelInfo.id);
