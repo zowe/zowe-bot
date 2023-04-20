@@ -296,6 +296,38 @@ export class MattermostClient {
     }
   }
 
+  async createDmChannel(user: IUser, botUser: IUser): Promise<IChannel> {
+    logger.start(this.createDmChannel, this);
+
+    try {
+      const body = [user.id, botUser.id];
+
+      logger.silly(`Create DM Channel Request Body: ${body}`);
+      const response = await this.post(`${this.mattermostServerBaseUrl}/channels/direct`).send(body);
+
+      // 2xx
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        const channel = {
+          id: response.body.id,
+          name: response.body.display_name,
+          chattingType: this.getChattingType(response.body.type),
+        };
+        return channel;
+      } else {
+        logger.error(`Failed to create direct message channel with user ${user.name}:${user.id}`);
+        logger.debug(`Response: ${response.status}, ${response.body}`);
+        logger.silly(`Response dump:\n-------\n${Util.dumpResponse(response)}`);
+        return null;
+      }
+    } catch (error) {
+      logger.error(Util.dumpObject(error));
+      // Print exception stack
+      logger.error(logger.getErrorStack(new Error(error.name), error));
+    } finally {
+      logger.end(this.getChannelById, this);
+    }
+  }
+
   private onError(error: Error): void {
     this.connectionStatus = IConnectionStatus.ERROR;
     logger.error(`On event error: ${error}`);

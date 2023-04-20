@@ -46,6 +46,7 @@ const logger = Logger.getInstance();
 export class SlackMiddleware extends Middleware {
   private app: App;
   private botName = '';
+  private botId = '';
   private users: Map<string, IUser>;
   private channels: Map<string, IChannel>;
 
@@ -157,6 +158,7 @@ export class SlackMiddleware extends Middleware {
         const botUserInfo = await slackEvent.client.users.info({ user: slackEvent.context.botUserId });
         logger.debug(`Bot user info: ${JSON.stringify(botUserInfo)}`);
         this.botName = botUserInfo.user.real_name;
+        this.botId = botUserInfo.user.id;
       }
 
       // Search the user from cached users.
@@ -193,6 +195,7 @@ export class SlackMiddleware extends Middleware {
       if ((<Record<string, any>>slackEvent.message).blocks !== undefined) {
         // eslint-disable-line @typescript-eslint/no-explicit-any
         const messageBlocks = (<Record<string, any>>slackEvent.message).blocks; // eslint-disable-line @typescript-eslint/no-explicit-any
+        logger.silly(`Slack Message Blocks: ${messageBlocks}`);
         for (const block of messageBlocks) {
           // Get the rich_text block
           if (block.type === 'rich_text' && block.elements !== undefined) {
@@ -201,7 +204,7 @@ export class SlackMiddleware extends Middleware {
                 logger.debug(`Find block rich_text_section to get the raw message`);
                 for (const richTextElement of element.elements) {
                   // Only consider user, link && text element.
-                  if (richTextElement.type === 'user' && richTextElement.user_i === slackEvent.context.botUserId) {
+                  if (richTextElement.type === 'user' && richTextElement.user_id === slackEvent.context.botUserId) {
                     rawMessage = `${rawMessage}@${this.botName}`;
                   } else if (richTextElement.type === 'text') {
                     rawMessage = rawMessage + richTextElement.text;
@@ -232,6 +235,10 @@ export class SlackMiddleware extends Middleware {
       if (channel.chattingType === IChattingType.PERSONAL) {
         if (message.indexOf(`@${this.botName}`) === -1) {
           message = `@${this.botName} ${message}`;
+        }
+      } else {
+        if (message.indexOf(`${this.botId}`) !== -1) {
+          message = ``;
         }
       }
 
@@ -568,15 +575,65 @@ export class SlackMiddleware extends Middleware {
 
   // Add the user
   addUser(id: string, user: IUser): boolean {
-    let result = true;
     if (id === undefined || id.trim() === '') {
-      result = false;
-      return result;
+      return false;
     }
 
     this.users.set(id, user);
-    result = true;
-    return result;
+    return true;
+  }
+
+  async sendDirectMessage(chatContextData: IChatContextData, messages: IMessage[]): Promise<boolean> {
+    // Print start log
+    logger.start(this.sendDirectMessage, this);
+    let channelId: string;
+    if (chatContextData.context.chatting.type === IChattingType.PERSONAL) {
+      channelId = chatContextData.context.chatting.channel.id;
+    } else {
+      const openResp = await this.app.client.conversations.open({
+        users: chatContextData.context.chatting.user.id,
+      });
+      if (openResp.ok) {
+        channelId = openResp.channel.id;
+      } else {
+        logger.error('Unable open a DM for user ' + chatContextData.context.chatting.user.name);
+        logger.debug(`Response: ${openResp.ok}s`);
+        logger.silly(`Response dump:\n-------\n${Util.dumpObject(openResp)}`);
+        return false;
+      }
+    }
+    try {
+      for (const msg of messages) {
+        logger.debug(`msg: ${JSON.stringify(msg, null, 2)}`);
+        if (msg.type === IMessageType.SLACK_VIEW_OPEN) {
+          if (msg.message.channel != null) {
+            msg.message.channel = channelId;
+          }
+          await this.app.client.views.open({ ...msg.message });
+        } else if (msg.type === IMessageType.SLACK_VIEW_UPDATE) {
+          if (msg.message.channel != null) {
+            msg.message.channel = channelId;
+          }
+          await this.app.client.views.update(msg.message);
+        } else if (msg.type === IMessageType.PLAIN_TEXT) {
+          await this.app.client.chat.postMessage({
+            channel: channelId,
+            text: msg.message,
+          });
+        } else {
+          logger.info('No message send to commonbot, ignoring.');
+          logger.debug(`Empty message: ${Util.dumpObject(msg)}`);
+          // TODO: should this return false? Whats the expectation of someone calling api with an empty msg?
+        }
+      }
+      return true;
+    } catch (err) {
+      // Print exception stack
+      logger.error(logger.getErrorStack(new Error(err.name), err));
+    } finally {
+      // Print end log
+      logger.end(this.sendDirectMessage, this);
+    }
   }
 
   // get channel by id

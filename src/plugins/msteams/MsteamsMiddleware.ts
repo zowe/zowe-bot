@@ -21,6 +21,7 @@ import {
   MessageFactory,
   ConversationAccount,
   Entity,
+  ChannelInfo,
 } from 'botbuilder';
 import { CommonBot } from '../../CommonBot';
 import { Middleware } from '../../Middleware';
@@ -97,10 +98,14 @@ export class MsteamsMiddleware extends Middleware {
 
       // Listen for incoming requests
       option.messagingApp.app.post(option.messagingApp.option.basePath, (req: Request, res: Response) => {
-        this.botFrameworkAdapter.processActivity(req, res, async (context) => {
-          // Process bot activity
-          await this.botActivityHandler.run(context);
-        });
+        this.botFrameworkAdapter
+          .processActivity(req, res, async (context) => {
+            // Process bot activity
+            await this.botActivityHandler.run(context);
+          })
+          .catch((error) => {
+            logger.error(logger.getErrorStack(new Error(error), error));
+          });
       });
     } catch (err) {
       // Print exception stack
@@ -108,6 +113,159 @@ export class MsteamsMiddleware extends Middleware {
     } finally {
       // Print end log
       logger.end(this.run, this);
+    }
+  }
+
+  private buildActivity(msgData: MessageData): Partial<Activity> {
+    let firstActivity: Partial<Activity>;
+    if (msgData.textMessage !== '') {
+      firstActivity = MessageFactory.text(msgData.textMessage);
+      firstActivity.entities = <Entity[]>msgData.mentions;
+    } else if (msgData.attachments != null && msgData.attachments.length > 0) {
+      firstActivity = MessageFactory.attachment(msgData.attachments[0]);
+      firstActivity.entities = <Entity[]>msgData.mentions;
+    } else {
+      firstActivity = {};
+    }
+    return firstActivity;
+  }
+
+  private processMessages(messages: IMessage[]): MessageData {
+    // Get text and attachment part of the message to be sent
+    let txtMsg = '';
+    const mentions: Record<string, any>[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const attachments: Attachment[] = [];
+    for (const message of messages) {
+      if (message.type === IMessageType.PLAIN_TEXT) {
+        txtMsg = `${txtMsg}\n${message.message}`;
+      } else if (message.type === IMessageType.MSTEAMS_ADAPTIVE_CARD) {
+        attachments.push(CardFactory.adaptiveCard(message.message));
+      } else {
+        logger.error(`Unsupported type "${message.type}" for the message: ${JSON.stringify(message, null, 2)}`);
+        txtMsg = `${txtMsg}\n${JSON.stringify(message.message)}`;
+      }
+
+      // Find channel ID by name or name by ID and merge all mentioned channels
+      // Need to be enhance later to support sending all messages via single response or sending all message one by one via multiple messages
+      if (message.mentions !== undefined && message.mentions.length > 0) {
+        for (const mention of message.mentions) {
+          if (mention.mentioned.id.trim() === '' && mention.mentioned.name.trim() !== '') {
+            const channelInfo = this.botActivityHandler.findChannelByName(mention.mentioned.name);
+            logger.debug(`Channel info for mention ${mention.mentioned.name}: ${JSON.stringify(channelInfo, null, 2)}`);
+            if (channelInfo !== null) {
+              mention.mentioned.id = channelInfo.id;
+            }
+          } else {
+            const channelInfo = this.botActivityHandler.findChannelById(mention.mentioned.id);
+            logger.debug(`Channel info for mention ${mention.mentioned.name}: ${JSON.stringify(channelInfo, null, 2)}`);
+            if (channelInfo !== null) {
+              mention.mentioned.name = channelInfo.name;
+            }
+          }
+
+          // if both id and name are found then push to the mentions
+          if (mention.mentioned.id !== '' && mention.mentioned.name !== '') {
+            mentions.push(mention);
+          }
+        }
+
+        logger.debug(`message.mentions: ${JSON.stringify(message.mentions, null, 2)}`);
+      }
+    }
+
+    logger.debug(`mentions: ${JSON.stringify(mentions, null, 2)}`);
+
+    return {
+      mentions: mentions,
+      textMessage: txtMsg,
+      attachments: attachments,
+    };
+  }
+
+  async sendDirectMessage(chatContextData: IChatContextData, messages: IMessage[]): Promise<boolean> {
+    logger.start(this.sendDirectMessage);
+    logger.debug('Sending direct message ...');
+    try {
+      const msgData = this.processMessages(messages);
+
+      // Check cached service URL
+      if (this.botActivityHandler.getServiceUrl().size === 0) {
+        logger.error(
+          `The cached MS Teams service URL is empty! ` +
+            `You must talk with your bot in your MS Teams client first to cache the service URL.`,
+        );
+        return false;
+      }
+
+      // Find channel and get service URL
+      let channelInfo: ChannelInfo;
+      let serviceUrl: string;
+      if (chatContextData.context.chatting.channel.id === '' && chatContextData.context.chatting.channel.name !== '') {
+        channelInfo = this.botActivityHandler.findChannelByName(chatContextData.context.chatting.channel.name);
+      } else {
+        channelInfo = this.botActivityHandler.findChannelById(chatContextData.context.chatting.channel.id);
+      }
+      logger.silly(`Source channel info: ${JSON.stringify(channelInfo, null, 2)}`);
+      if (channelInfo == null || channelInfo.id == null) {
+        if (chatContextData.context.chatTool?.context?._activity?.serviceUrl == null) {
+          logger.error(`Could not find channel info, and could not find serviceUrl because of it.`);
+          return false;
+        }
+        serviceUrl = chatContextData.context.chatTool.context._activity.serviceUrl;
+      } else {
+        serviceUrl = this.botActivityHandler.findServiceUrl(channelInfo.id);
+      }
+
+      logger.silly(`Service URL: ${serviceUrl}`);
+
+      if (serviceUrl == null || serviceUrl.trim() === '') {
+        logger.error(`MS Teams service URL does not exist for the channel ${JSON.stringify(channelInfo, null, 2)}`);
+        return false;
+      }
+
+      // Create connector client
+      const connectorClient = this.botFrameworkAdapter.createConnectorClient(serviceUrl);
+
+      const targetMember = {
+        id: chatContextData.context.chatting.user.id,
+      };
+
+      if (chatContextData.context.chatTool?.context?._activity?.recipient == null) {
+        logger.error(`Couldn't find the MSTeams BotId`);
+        logger.silly(`ChatTool Context: ${chatContextData.context.chatTool}`);
+        return false;
+      }
+
+      const conversationParameters = <ConversationParameters>{
+        isGroup: false,
+        members: [targetMember],
+        bot: chatContextData.context.chatTool.context._activity.recipient,
+        channelData: {
+          tenant: {
+            id: chatContextData.context.chatting.tenant.id,
+          },
+        },
+      };
+
+      // Send proactive message
+      // Note this function can't send multiple attachments
+      const conversationResourceResponse = await connectorClient.conversations.createConversation(conversationParameters);
+
+      logger.silly(`Conversation Response: ${Util.dumpObject(conversationResourceResponse)}`);
+
+      const dmContext: Partial<Activity> = this.buildActivity(msgData);
+      dmContext.id = conversationResourceResponse.id;
+
+      await connectorClient.conversations.sendToConversation(conversationResourceResponse.id, dmContext);
+
+      return true;
+    } catch (err) {
+      // Print exception stack
+      logger.error(logger.getErrorStack(new Error(err.name), err));
+      return false;
+    } finally {
+      // Print end log
+      logger.end(this.sendDirectMessage, this);
     }
   }
 
@@ -121,60 +279,19 @@ export class MsteamsMiddleware extends Middleware {
       logger.debug(`Chat context data sent to MS Teams: ${Util.dumpObject(chatContextData, 2)}`);
 
       // Get text and attachment part of the message to be sent
-      let textMessage = '';
-      const mentions: Record<string, any>[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
-      const attachments: Attachment[] = [];
-      for (const message of messages) {
-        if (message.type === IMessageType.PLAIN_TEXT) {
-          textMessage = `${textMessage}\n${message.message}`;
-        } else if (message.type === IMessageType.MSTEAMS_ADAPTIVE_CARD) {
-          attachments.push(CardFactory.adaptiveCard(message.message));
-        } else {
-          logger.error(`Unsupported type "${message.type}" for the message: ${JSON.stringify(message, null, 2)}`);
-          textMessage = `${textMessage}\n${JSON.stringify(message.message)}`;
-        }
-
-        // Find channel ID by name or name by ID and merge all mentioned channels
-        // Need to be enhance later to support sending all messages via single response or sending all message one by one via multiple messages
-        if (message.mentions !== undefined && message.mentions.length > 0) {
-          for (const mention of message.mentions) {
-            if (mention.mentioned.id.trim() === '' && mention.mentioned.name.trim() !== '') {
-              const channelInfo = this.botActivityHandler.findChannelByName(mention.mentioned.name);
-              logger.debug(`Channel info for mention ${mention.mentioned.name}: ${JSON.stringify(channelInfo, null, 2)}`);
-              if (channelInfo !== null) {
-                mention.mentioned.id = channelInfo.id;
-              }
-            } else {
-              const channelInfo = this.botActivityHandler.findChannelById(mention.mentioned.id);
-              logger.debug(`Channel info for mention ${mention.mentioned.name}: ${JSON.stringify(channelInfo, null, 2)}`);
-              if (channelInfo !== null) {
-                mention.mentioned.name = channelInfo.name;
-              }
-            }
-
-            // if both id and name are found then push to the mentions
-            if (mention.mentioned.id !== '' && mention.mentioned.name !== '') {
-              mentions.push(mention);
-            }
-          }
-
-          logger.debug(`message.mentions: ${JSON.stringify(message.mentions, null, 2)}`);
-        }
-      }
-
-      logger.debug(`mentions: ${JSON.stringify(mentions, null, 2)}`);
+      const msgData = this.processMessages(messages);
 
       // Get activity
-      let activity: string | Partial<Activity> = null;
-      if (textMessage !== '' && attachments.length === 0) {
+      let activity: string | Partial<Activity>;
+      if (msgData.textMessage !== '' && msgData.attachments.length === 0) {
         // Pure text
-        activity = MessageFactory.text(textMessage);
-      } else if (textMessage === '' && attachments.length > 0) {
+        activity = MessageFactory.text(msgData.textMessage);
+      } else if (msgData.textMessage === '' && msgData.attachments.length > 0) {
         // Adaptive card
-        activity = { attachments: attachments };
-      } else if (textMessage !== '' && attachments.length > 0) {
+        activity = { attachments: msgData.attachments };
+      } else if (msgData.textMessage !== '' && msgData.attachments.length > 0) {
         // Pure text + adaptive card
-        activity = { text: textMessage, attachments: attachments };
+        activity = { text: msgData.textMessage, attachments: msgData.attachments };
       } else {
         activity = '';
         logger.warn(`The message to be sent is empty!`);
@@ -183,12 +300,7 @@ export class MsteamsMiddleware extends Middleware {
 
       // Send message back to channel
       if (activity !== '') {
-        if (
-          chatContextData.context.chatTool !== null &&
-          chatContextData.context.chatTool !== undefined &&
-          chatContextData.context.chatTool.context !== null &&
-          chatContextData.context.chatTool.context !== undefined
-        ) {
+        if (chatContextData.context.chatTool != null && chatContextData.context.chatTool.context != null) {
           // Conversation message
           logger.info('Send conversation message ...');
 
@@ -214,7 +326,7 @@ export class MsteamsMiddleware extends Middleware {
           }
 
           // Find channel
-          let channelInfo = null;
+          let channelInfo: ChannelInfo;
           if (chatContextData.context.chatting.channel.id === '' && chatContextData.context.chatting.channel.name !== '') {
             channelInfo = this.botActivityHandler.findChannelByName(chatContextData.context.chatting.channel.name);
           } else {
@@ -229,7 +341,7 @@ export class MsteamsMiddleware extends Middleware {
           }
 
           // Get service URL
-          const serviceUrl = this.botActivityHandler.findServiceUrl(channelInfo.id);
+          const serviceUrl = this.botActivityHandler.findServiceUrl(channelInfo.id!);
           logger.info(`Service URL: ${serviceUrl}`);
           if (serviceUrl === '') {
             logger.error(`MS Teams service URL does not exist for the channel ${JSON.stringify(channelInfo, null, 2)}`);
@@ -244,14 +356,7 @@ export class MsteamsMiddleware extends Middleware {
           // Send proactive message will fail, more details please look at below
           //  Reference:
           //    how to @someone in MS Teams: https://docs.microsoft.com/en-us/microsoftteams/platform/bots/how-to/conversations/channel-and-group-conversations?tabs=typescript
-          let firstActivity: Partial<Activity> = null;
-          if (textMessage !== '') {
-            firstActivity = MessageFactory.text(textMessage);
-            firstActivity.entities = <Entity[]>mentions;
-          } else if (attachments.length > 0) {
-            firstActivity = MessageFactory.attachment(attachments[0]);
-            firstActivity.entities = <Entity[]>mentions;
-          }
+          const firstActivity: Partial<Activity> = this.buildActivity(msgData);
           logger.debug(`firstActivity: ${JSON.stringify(firstActivity, null, 2)}`);
           const conversationParameters = <ConversationParameters>{
             isGroup: true,
@@ -275,15 +380,17 @@ export class MsteamsMiddleware extends Middleware {
           const conversationResourceResponse = await connectorClient.conversations.createConversation(conversationParameters);
 
           // Create the rest not sended Activity
-          let restActivity: Partial<Activity> = null;
-          if (textMessage !== '' && attachments.length > 0) {
-            restActivity = { attachments: attachments };
-            restActivity.entities = <Entity[]>mentions;
-          } else if (textMessage === '' && attachments.length > 1) {
+          let restActivity: Partial<Activity>;
+          if (msgData.textMessage !== '' && msgData.attachments.length > 0) {
+            restActivity = { attachments: msgData.attachments };
+            restActivity.entities = <Entity[]>msgData.mentions;
+          } else if (msgData.textMessage === '' && msgData.attachments.length > 1) {
             // Remove the first attachment since it's already been sended.
-            attachments.shift();
-            restActivity = { attachments: attachments };
-            restActivity.entities = <Entity[]>mentions;
+            msgData.attachments.shift();
+            restActivity = { attachments: msgData.attachments };
+            restActivity.entities = <Entity[]>msgData.mentions;
+          } else {
+            restActivity = {};
           }
           logger.debug(`restActivity: ${JSON.stringify(restActivity, null, 2)}`);
           // Create the conversationReference
@@ -310,3 +417,9 @@ export class MsteamsMiddleware extends Middleware {
     }
   }
 }
+
+type MessageData = {
+  textMessage: string;
+  mentions: Record<string, any>;
+  attachments: Attachment[];
+};

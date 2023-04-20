@@ -1,0 +1,204 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`MsTeams Middleware Tests MSTeams processMessages 1`] = `
+{
+  "attachments": [],
+  "mentions": [],
+  "textMessage": "
+hi
+over",
+}
+`;
+
+exports[`MsTeams Middleware Tests MSTeams processMessages 2`] = `
+{
+  "attachments": [],
+  "mentions": [
+    {
+      "mentioned": {
+        "id": "mock_id",
+      },
+    },
+    {
+      "mentioned": {
+        "id": "another_id",
+        "name": "mock_name",
+      },
+    },
+  ],
+  "textMessage": "
+there
+name",
+}
+`;
+
+exports[`MsTeams Middleware Tests MSTeams processMessages 3`] = `
+{
+  "attachments": [],
+  "mentions": [],
+  "textMessage": "
+there",
+}
+`;
+
+exports[`MsTeams Middleware Tests MSTeams processMessages 4`] = `
+{
+  "attachments": [],
+  "mentions": [
+    {
+      "mentioned": {
+        "id": "mock_id",
+      },
+    },
+  ],
+  "textMessage": "
+"open the dialog"",
+}
+`;
+
+exports[`MsTeams Middleware Tests MSTeams processMessages 5`] = `
+{
+  "attachments": [],
+  "mentions": [],
+  "textMessage": "",
+}
+`;
+
+exports[`MsTeams Middleware Tests MSTeams processMessages 6`] = `
+{
+  "attachments": [],
+  "mentions": [],
+  "textMessage": "
+hi
+over",
+}
+`;
+
+exports[`MsTeams Middleware Tests MSTeams processMessages 7`] = `
+{
+  "attachments": [],
+  "mentions": [
+    {
+      "mentioned": {
+        "id": "mock_id",
+        "name": "mocked_found_name",
+      },
+    },
+    {
+      "mentioned": {
+        "id": "another_id",
+        "name": "mocked_found_name",
+      },
+    },
+  ],
+  "textMessage": "
+there
+name",
+}
+`;
+
+exports[`MsTeams Middleware Tests MSTeams processMessages 8`] = `
+{
+  "attachments": [],
+  "mentions": [
+    {
+      "mentioned": {
+        "id": "mocked_found_id",
+        "name": "mock_name",
+      },
+    },
+  ],
+  "textMessage": "
+there",
+}
+`;
+
+exports[`MsTeams Middleware Tests MSTeams processMessages 9`] = `
+{
+  "attachments": [],
+  "mentions": [
+    {
+      "mentioned": {
+        "id": "mock_id",
+        "name": "mocked_found_name",
+      },
+    },
+  ],
+  "textMessage": "
+"open the dialog"",
+}
+`;
+
+exports[`MsTeams Middleware Tests MSTeams processMessages 10`] = `
+{
+  "attachments": [],
+  "mentions": [],
+  "textMessage": "",
+}
+`;
+
+exports[`MsTeams Middleware Tests MsTeams buildActivity 1`] = `
+{
+  "entities": undefined,
+  "inputHint": "acceptingInput",
+  "text": "test",
+  "type": "message",
+}
+`;
+
+exports[`MsTeams Middleware Tests MsTeams buildActivity 2`] = `
+{
+  "entities": {
+    "user": "mock_user",
+  },
+  "inputHint": "acceptingInput",
+  "text": "two",
+  "type": "message",
+}
+`;
+
+exports[`MsTeams Middleware Tests MsTeams buildActivity 3`] = `
+{
+  "entities": undefined,
+  "inputHint": "acceptingInput",
+  "text": undefined,
+  "type": "message",
+}
+`;
+
+exports[`MsTeams Middleware Tests MsTeams buildActivity 4`] = `
+{
+  "attachmentLayout": "list",
+  "attachments": [
+    {
+      "content": "abcdef",
+      "contentType": "mimetype/gif",
+    },
+  ],
+  "entities": undefined,
+  "inputHint": "acceptingInput",
+  "type": "message",
+}
+`;
+
+exports[`MsTeams Middleware Tests MsTeams buildActivity 5`] = `
+{
+  "entities": undefined,
+  "inputHint": "acceptingInput",
+  "text": "with a text message",
+  "type": "message",
+}
+`;
+
+exports[`MsTeams Middleware Tests MsTeams buildActivity 6`] = `
+{
+  "entities": {
+    "user": "mock_user",
+  },
+  "inputHint": "acceptingInput",
+  "text": undefined,
+  "type": "message",
+}
+`;
+
+exports[`MsTeams Middleware Tests MsTeams buildActivity 7`] = `{}`;
