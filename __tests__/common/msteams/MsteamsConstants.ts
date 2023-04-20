@@ -8,13 +8,16 @@
  * Copyright Contributors to the Zowe Project.
  */
 
-jest.setTimeout(50000);
-
-if (process.env.TEST_DEBUG === 'true') {
-  process.env = {
-    ...process.env,
-    COMMONBOT_LOG_CONSOLE_SILENT: 'false',
-    COMMONBOT_LOG_LEVEL: 'debug',
-    COMMONBOT_LOG_FILE_PATH: './__tests__/__results__',
+export class MsteamsConstants {
+  public static EMPTY_ADAPTIVE_CARD: Record<string, any> = {
+    type: 'AdaptiveCard',
+    fallbackText: '',
+    msteams: {
+      width: 'Full',
+    },
+    body: [],
+    actions: [],
+    $schema: 'http://adaptivecards.io/schemas/adaptive-card.json',
+    version: '1.4',
   };
 }

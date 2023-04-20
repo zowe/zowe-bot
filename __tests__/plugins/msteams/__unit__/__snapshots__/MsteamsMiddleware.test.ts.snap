@@ -201,4 +201,4 @@ exports[`MsTeams Middleware Tests MsTeams buildActivity 6`] = `
 }
 `;
 
-exports[`MsTeams Middleware Tests MsTeams buildActivity 7`] = `null`;
+exports[`MsTeams Middleware Tests MsTeams buildActivity 7`] = `{}`;

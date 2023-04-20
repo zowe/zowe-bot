@@ -78,11 +78,19 @@ export class MockContexts {
     },
   });
 
+  static MSTEAMS_CHATTOOL_CONTEXT = {
+    context: {
+      _activity: {
+        recipient: 'mock_msteams_recipient',
+      },
+    },
+  };
+
   static MSTEAMS_SIMPLE_CTX: IChatContextData = {
     payload: this.mockMsg,
     context: {
       chatting: this.publicChatting,
-      chatTool: undefined,
+      chatTool: this.MSTEAMS_CHATTOOL_CONTEXT,
     },
   };
 }

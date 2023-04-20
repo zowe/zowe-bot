@@ -21,6 +21,7 @@ import {
   MessageFactory,
   ConversationAccount,
   Entity,
+  ChannelInfo,
 } from 'botbuilder';
 import { CommonBot } from '../../CommonBot';
 import { Middleware } from '../../Middleware';
@@ -116,15 +117,16 @@ export class MsteamsMiddleware extends Middleware {
   }
 
   private buildActivity(msgData: MessageData): Partial<Activity> {
-    let firstActivity: Partial<Activity> = null;
+    let firstActivity: Partial<Activity>;
     if (msgData.textMessage !== '') {
       firstActivity = MessageFactory.text(msgData.textMessage);
       firstActivity.entities = <Entity[]>msgData.mentions;
     } else if (msgData.attachments != null && msgData.attachments.length > 0) {
       firstActivity = MessageFactory.attachment(msgData.attachments[0]);
       firstActivity.entities = <Entity[]>msgData.mentions;
+    } else {
+      firstActivity = {};
     }
-
     return firstActivity;
   }
 
@@ -196,15 +198,15 @@ export class MsteamsMiddleware extends Middleware {
       }
 
       // Find channel and get service URL
-      let channelInfo = null;
-      let serviceUrl: string = null;
+      let channelInfo: ChannelInfo;
+      let serviceUrl: string;
       if (chatContextData.context.chatting.channel.id === '' && chatContextData.context.chatting.channel.name !== '') {
         channelInfo = this.botActivityHandler.findChannelByName(chatContextData.context.chatting.channel.name);
       } else {
         channelInfo = this.botActivityHandler.findChannelById(chatContextData.context.chatting.channel.id);
       }
       logger.silly(`Source channel info: ${JSON.stringify(channelInfo, null, 2)}`);
-      if (channelInfo == null) {
+      if (channelInfo == null || channelInfo.id == null) {
         serviceUrl = chatContextData.context.chatTool.context._activity.serviceUrl;
       } else {
         serviceUrl = this.botActivityHandler.findServiceUrl(channelInfo.id);
@@ -223,6 +225,12 @@ export class MsteamsMiddleware extends Middleware {
       const targetMember = {
         id: chatContextData.context.chatting.user.id,
       };
+
+      if (chatContextData.context.chatTool?.context?._activity?.recipient == null) {
+        logger.error(`Couldn't find the MSTeams BotId`);
+        logger.silly(`ChatTool Context: ${chatContextData.context.chatTool}`);
+        return false;
+      }
 
       const conversationParameters = <ConversationParameters>{
         isGroup: false,
@@ -270,7 +278,7 @@ export class MsteamsMiddleware extends Middleware {
       const msgData = this.processMessages(messages);
 
       // Get activity
-      let activity: string | Partial<Activity> = null;
+      let activity: string | Partial<Activity>;
       if (msgData.textMessage !== '' && msgData.attachments.length === 0) {
         // Pure text
         activity = MessageFactory.text(msgData.textMessage);
@@ -314,7 +322,7 @@ export class MsteamsMiddleware extends Middleware {
           }
 
           // Find channel
-          let channelInfo = null;
+          let channelInfo: ChannelInfo;
           if (chatContextData.context.chatting.channel.id === '' && chatContextData.context.chatting.channel.name !== '') {
             channelInfo = this.botActivityHandler.findChannelByName(chatContextData.context.chatting.channel.name);
           } else {
@@ -329,7 +337,7 @@ export class MsteamsMiddleware extends Middleware {
           }
 
           // Get service URL
-          const serviceUrl = this.botActivityHandler.findServiceUrl(channelInfo.id);
+          const serviceUrl = this.botActivityHandler.findServiceUrl(channelInfo.id!);
           logger.info(`Service URL: ${serviceUrl}`);
           if (serviceUrl === '') {
             logger.error(`MS Teams service URL does not exist for the channel ${JSON.stringify(channelInfo, null, 2)}`);
@@ -368,7 +376,7 @@ export class MsteamsMiddleware extends Middleware {
           const conversationResourceResponse = await connectorClient.conversations.createConversation(conversationParameters);
 
           // Create the rest not sended Activity
-          let restActivity: Partial<Activity> = null;
+          let restActivity: Partial<Activity>;
           if (msgData.textMessage !== '' && msgData.attachments.length > 0) {
             restActivity = { attachments: msgData.attachments };
             restActivity.entities = <Entity[]>msgData.mentions;
@@ -377,6 +385,8 @@ export class MsteamsMiddleware extends Middleware {
             msgData.attachments.shift();
             restActivity = { attachments: msgData.attachments };
             restActivity.entities = <Entity[]>msgData.mentions;
+          } else {
+            restActivity = {};
           }
           logger.debug(`restActivity: ${JSON.stringify(restActivity, null, 2)}`);
           // Create the conversationReference
