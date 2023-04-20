@@ -274,5 +274,26 @@ describe('MsTeams Middleware Tests', () => {
         expect(sent).toBe(false);
       }
     });
+
+    it('something throws an error', async () => {
+      const ctx: IChatContextData = MockContexts.MSTEAMS_SIMPLE_CTX;
+
+      jest.spyOn(middlewareMock.botFrameworkAdapter, 'createConnectorClient').mockImplementation(() => {
+        throw new Error('something bad happened');
+      });
+      for (const test of testCases) {
+        const sent = await middlewareMock.sendDirectMessage(ctx, test);
+        expect(sent).toBe(false);
+      }
+
+      // earlier call
+      jest.spyOn(middlewareMock, 'processMessages').mockImplementation(() => {
+        throw new Error('something bad happened');
+      });
+      for (const test of testCases) {
+        const sent = await middlewareMock.sendDirectMessage(ctx, test);
+        expect(sent).toBe(false);
+      }
+    });
   });
 });
