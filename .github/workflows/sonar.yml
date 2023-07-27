@@ -4,39 +4,41 @@ on:
   push:
     branches:
       - main
-      - user/markackert/sonar
   pull_request:
     branches:
-      - "**"
+      - '**'
+
+permissions: read-all
 
 jobs:
   sonar:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0 
+      - name: Checkout
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+        with:
+          fetch-depth: 0
 
-    - name: Use Node.js LTS
-      uses: actions/setup-node@v2
-      with:
-        node-version: 16
+      - name: Use Node.js LTS
+        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3.6.0
+        with:
+          node-version: 16
 
-    - name: Use NPM v8
-      id: npm8
-      run: npm install -g npm@^8
+      - name: Install Node Package Dependencies
+        run: npm ci
 
-    - name: Install Node Package Dependencies
-      run: npm ci
+      - name: Build
+        run: npm run build
 
-    - name: Build 
-      run: npm run build
+      - name: Unit Tests
+        run: npm run test:unit
 
-    - name: SonarCloud Scan
-      uses: SonarSource/sonarcloud-github-action@master
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: Integration Tests
+        run: npm run test:integration
 
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@db501078e936e4b4c8773d1bb949ba9ddb7b6b6a # v1.9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

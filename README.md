@@ -1,5 +1,7 @@
 # Common Bot Framework
 
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/zowe/zowe-bot/badge)](https://api.securityscorecards.dev/projects/github.com/zowe/zowe-bot)
+
 The Common Bot Framework is a NPM library that provides a set of uniform interface for developers to create chat bots and chat with them for different chat platforms including Mattermost, Slack and Microsoft Teams so as to to enable chat functionality for your products.
 
 ## Content

@@ -1,0 +1,71 @@
+# This workflow will do a clean install of node dependencies, build the source code and run tests across different versions of node
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: CI Build
+
+permissions: read-all
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  build-and-test:
+    if: (!contains(github.event.head_commit.message, '[ci skip]'))
+    runs-on: ${{ matrix.os }}
+    outputs:
+      npm-resolutions: ${{ steps.npm-update.outputs.result }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [16.x, 18.x]
+        os: [ubuntu-latest]
+
+    env:
+      OS: ${{ matrix.os }}
+      NODE: ${{ matrix.node-version }}
+
+    timeout-minutes: 60
+
+    concurrency:
+      group: ${{ matrix.os }}-node-${{ matrix.node-version }}-ci-${{ github.ref }}
+      cancel-in-progress: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3.6.0
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Source
+        id: build
+        run: npm run build
+
+      - name: Unit Tests
+        run: npm run test:unit
+
+      - name: Integration Tests
+        run: npm run test:integration
+
+      - name: Archive Results
+        if: ${{ always() && steps.build.outcome == 'success' }}
+        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # v3.1.0
+        with:
+          name: ${{ matrix.os }}-${{ matrix.node-version }}-results
+          path: __tests__/__results__/
+
+      - name: Upload Results to Codecov
+        if: ${{ always() && steps.build.outcome == 'success' }}
+        uses: codecov/codecov-action@40a12dcee2df644d47232dde008099a3e9e4f865 # v3.1.2
+        with:
+          env_vars: OS,NODE
