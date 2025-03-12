@@ -31,7 +31,7 @@ export class MattermostClient {
   private teamId: string; // Team id for bot user.
   private reconnectCount: number;
   private lastPongTime: number;
-  private pongTimer: NodeJS.Timer;
+  private pongTimer: NodeJS.Timeout;
   private connectionStatus: IConnectionStatus;
   private mattermostServerBaseUrl: string;
 

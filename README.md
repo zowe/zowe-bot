@@ -73,7 +73,7 @@ Except pure plain text and markdown format, most of chat platforms provide their
 * **MSTEAMS_DIALOG_OPEN**: _**Teams only**_ Open a dialog
 
 ## Create chat bot
-Before you can leverage Common Bot Framework to create one chat bot, you must create one required chat platform app and configure your chat platform and write down the values for all required properties. [Learn more ...](https://www.ibm.com/docs/en/z-chatops/1.1.2?topic=software-configuring-your-chat-platform)
+Before you can leverage Common Bot Framework to create one chat bot, you must create one required chat platform app and configure your chat platform and write down the values for all required properties. [Learn more ...](https://www.ibm.com/docs/en/z-chatops/1.1.4.x?topic=software-configuring-your-chat-platform)
 * Mattermost
 ``` TypeScript
 // Create messaging app
