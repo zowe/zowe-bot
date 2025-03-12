@@ -580,11 +580,27 @@ export class SlackMiddleware extends Middleware {
   }
 
   // get channel by id
-  async getChannelById(id: string, slackWebClient: WebClient): Promise<IChannel> {
+  async getChannelById(id: string, slackWebClient: unknown): Promise<IChannel> {
     logger.start(this.getChannelById);
+    
+    /**
+     * Type cast slackWebClient as WebClient and assign to slackWc.
+     * 
+     * There are two package dependencies of @slack/web-api installed:
+     * 
+     *  1. From @slack/web-api v7 dependency
+     *  2. From @slack/bolt v3 transitive dependency on @slack/web-api v6
+     * 
+     * @slack/web-api v7 introduces additional propertes to WebClient that
+     *  don't exist on v6.
+     * 
+     * This will be resolved when the application migrates from @slack/bolt v3
+     *  to @slack/bolt v4 - which requires major version migration.
+     */
+    const slackWc = slackWebClient as WebClient;
 
     try {
-      const conversationInfo = await slackWebClient.conversations.info({ channel: id });
+      const conversationInfo = await slackWc.conversations.info({ channel: id });
 
       let chattingType: IChattingType = IChattingType.UNKNOWN;
       if (conversationInfo.channel.is_channel === true && conversationInfo.channel.is_mpim === false) {
