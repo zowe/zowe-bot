@@ -19,8 +19,6 @@ module.exports = {
   extends: ['eslint:recommended', 'plugin:node/recommended', 'prettier'],
   ignorePatterns: ['**/.build', '**/build', '**/dist', '**/node_modules', '**/release', '**/lib'],
   rules: {
-    // Suppress line ending errors for Windows users - npm will convert to LF
-    'linebreak-style': ['error', 'off'],
     'header/header': [
       2,
       'block',
